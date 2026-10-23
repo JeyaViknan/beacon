@@ -175,9 +175,14 @@ data "aws_iam_policy_document" "deploy" {
   }
 
   statement {
-    sid       = "WebBucket"
-    actions   = ["s3:*"]
-    resources = ["arn:aws:s3:::beacon-web-${local.account_id}", "arn:aws:s3:::beacon-web-${local.account_id}/*"]
+    sid     = "WebAndArtifactBuckets"
+    actions = ["s3:*"]
+    resources = [
+      "arn:aws:s3:::beacon-web-${local.account_id}",
+      "arn:aws:s3:::beacon-web-${local.account_id}/*",
+      "arn:aws:s3:::beacon-artifacts-${local.account_id}",
+      "arn:aws:s3:::beacon-artifacts-${local.account_id}/*",
+    ]
   }
 
   statement {

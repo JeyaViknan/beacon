@@ -225,7 +225,8 @@ resource "aws_lambda_function" "fn" {
   runtime          = "python3.12"
   architectures    = ["arm64"]
   handler          = "${each.key}.app.handler"
-  filename         = "${var.dist_dir}/${each.key}.zip"
+  s3_bucket        = aws_s3_object.lambda[each.key].bucket
+  s3_key           = aws_s3_object.lambda[each.key].key
   source_code_hash = filebase64sha256("${var.dist_dir}/${each.key}.zip")
   memory_size      = each.value.memory
   timeout          = each.value.timeout

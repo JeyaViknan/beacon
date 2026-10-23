@@ -17,6 +17,8 @@ module "probe_mumbai" {
   count  = contains(var.probe_regions, "ap-south-1") ? 1 : 0
 
   region             = "ap-south-1"
+  s3_bucket          = aws_s3_object.lambda["probe"].bucket # same region as the bucket
+  s3_key             = aws_s3_object.lambda["probe"].key
   home_region        = local.probe_common.home_region
   zip_path           = local.probe_common.zip_path
   table_name         = local.probe_common.table_name

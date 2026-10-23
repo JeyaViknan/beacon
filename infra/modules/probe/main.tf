@@ -68,7 +68,9 @@ resource "aws_lambda_function" "probe" {
   runtime          = "python3.12"
   architectures    = ["arm64"]
   handler          = "probe.app.handler"
-  filename         = var.zip_path
+  filename         = var.s3_bucket == null ? var.zip_path : null
+  s3_bucket        = var.s3_bucket
+  s3_key           = var.s3_key
   source_code_hash = filebase64sha256(var.zip_path)
   memory_size      = 256
   timeout          = 50

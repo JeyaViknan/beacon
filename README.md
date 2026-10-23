@@ -40,7 +40,9 @@ Design decisions are in [`docs/adr/`](docs/adr/); the full specification is [`HA
 
 ## First deploy (M4 checkpoint)
 
-Prerequisites: AWS CLI (`brew install awscli`), Terraform ≥ 1.10, `uv`, and admin credentials for your AWS account (`aws configure sso` or a profile), exported as `AWS_PROFILE`.
+Prerequisites: AWS CLI v2.32+ (`brew install awscli`), Terraform ≥ 1.10, `uv`, and an admin sign-in for the CLI: `aws login --profile beacon --region ap-south-1` (browser sign-in, short-lived credentials, no access keys), then `export AWS_PROFILE=beacon`.
+
+Brand-new AWS accounts must be verified by AWS Support before CloudFront resources can be created. Open an "Account and billing" case early if your account is new.
 
 ```bash
 # 1. Bootstrap (once): state bucket, GitHub OIDC role, $1 budget

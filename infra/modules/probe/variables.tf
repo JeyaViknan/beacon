@@ -9,8 +9,20 @@ variable "home_region" {
 }
 
 variable "zip_path" {
-  description = "Path to dist/probe.zip."
+  description = "Path to dist/probe.zip (hashed to detect code changes; uploaded directly when s3_bucket is null)."
   type        = string
+}
+
+variable "s3_bucket" {
+  description = "Bucket holding the probe zip. Must be in the probe's region; null = upload the zip directly."
+  type        = string
+  default     = null
+}
+
+variable "s3_key" {
+  description = "Key of the probe zip in s3_bucket."
+  type        = string
+  default     = null
 }
 
 variable "table_name" {
