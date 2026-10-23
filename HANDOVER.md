@@ -624,7 +624,7 @@ beacon/
 |---|---|---|
 | M0 | done | Scaffold, pinned deps, ruff/pytest/coverage, Makefile, Vite+React+TS+Tailwind skeleton. Python 3.12 via uv. |
 | M1 | done | Models, pure state machine (quorum, freshness, same-minute re-eval, degraded, pause/resume, ack), uptime/p95/error budget, time utils. 141 tests, 100% core coverage. ADR 0005. |
-| M2 | not started | |
+| M2 | done | SSRF guard with DNS check + IP pinning (Host/SNI), checks (status ranges, keyword ≤1 MB, ≤3 redirects re-checked, error texts), snapshot cache, probe handler (one SQS msg/run). ADR 0010. |
 | M3 | not started | |
 | M4 | not started | |
 | M5 | not started | |

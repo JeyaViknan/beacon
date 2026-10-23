@@ -149,6 +149,7 @@ def test_product_input_defaults_and_camel_case():
         {"stack": ["x" * 31]},
         {"liveUrl": "javascript:alert(1)"},
         {"unknownField": 1},
+        {"method": "HEAD", "keyword": "Welcome"},
     ],
 )
 def test_product_input_rejects(override):

@@ -9,7 +9,7 @@ from enum import StrEnum
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.alias_generators import to_camel
 
 Kind = Literal["personal", "client"]
@@ -147,6 +147,12 @@ class ProductInput(CamelModel):
     def _expected_status(cls, value: str) -> str:
         parse_status_ranges(value)
         return value.replace(" ", "")
+
+    @model_validator(mode="after")
+    def _keyword_needs_body(self) -> "ProductInput":
+        if self.keyword and self.method == "HEAD":
+            raise ValueError("keyword checks need method GET (HEAD has no body)")
+        return self
 
     @field_validator("stack")
     @classmethod
