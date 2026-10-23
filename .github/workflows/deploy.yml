@@ -1,0 +1,132 @@
+# Deploy: every push to main (or a manual run) -> full CI -> Jeya approves the `production`
+# environment -> OIDC into AWS -> terraform plan + apply -> publish the PWA -> smoke test.
+# No AWS keys are stored in GitHub: the job exchanges its GitHub OIDC token for a short-lived
+# session on the beacon-github-deploy role, which only trusts this repo's production environment.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false # never interrupt a running terraform apply
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy to AWS
+    needs: ci
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment:
+      name: production # required reviewer: Jeya
+      url: ${{ steps.outputs.outputs.app_url }}
+    permissions:
+      contents: read
+      id-token: write # lets the job request a GitHub OIDC token for AWS
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }} # a secret so logs mask it (public repo)
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check repository variables
+        # Passed through env (not inlined into the script) so a value can never inject shell code.
+        env:
+          AWS_DEPLOY_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+        run: |
+          missing=0
+          for name in AWS_DEPLOY_ROLE_ARN AWS_REGION TF_STATE_BUCKET VITE_VAPID_PUBLIC_KEY ALERT_EMAIL; do
+            if [ -z "${!name}" ]; then echo "::error::Repository variable or secret $name is not set"; missing=1; fi
+          done
+          exit "$missing"
+
+      - name: Version
+        id: version
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: services/requirements/*.txt
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.17.0"
+          terraform_wrapper: false
+
+      - name: Assume the deploy role (OIDC)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: beacon-deploy-${{ github.run_id }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Build Lambda zips
+        run: PYTHON=python3 ./scripts/build_lambdas.sh
+
+      - name: Terraform init
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+        run: terraform -chdir=infra/main init -backend-config="bucket=$TF_STATE_BUCKET"
+
+      - name: Terraform plan
+        run: |
+          terraform -chdir=infra/main plan -no-color -out=tfplan \
+            -var "app_version=${{ steps.version.outputs.short }}" | tee plan.txt
+          {
+            echo "## Terraform plan"
+            echo '```'
+            grep -E '^  # |^Plan:|^No changes' plan.txt || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Terraform apply
+        run: terraform -chdir=infra/main apply -no-color tfplan
+
+      - name: Read outputs
+        id: outputs
+        run: |
+          echo "app_url=$(terraform -chdir=infra/main output -raw cloudfront_url)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the web app
+        env:
+          VITE_APP_VERSION: ${{ steps.version.outputs.short }}
+          VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
+        run: ./scripts/deploy_web.sh
+
+      - name: Smoke test
+        env:
+          APP_URL: ${{ steps.outputs.outputs.app_url }}
+          VERSION: ${{ steps.version.outputs.short }}
+        run: ./scripts/smoke_test.sh "$APP_URL" "$VERSION"
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Deployment"
+            echo "- Version: \`${{ steps.version.outputs.short }}\`"
+            echo "- App: ${{ steps.outputs.outputs.app_url }}"
+            echo "- Health: ${{ steps.outputs.outputs.app_url }}/api/health"
+            echo "- Result: ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"

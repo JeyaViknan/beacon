@@ -19,7 +19,7 @@ mkdir -p "$DIST"
 for fn in "${FUNCTIONS[@]}"; do
   echo "==> $fn"
   out="$BUILD/$fn"
-  rm -rf "$out"
+  rm -rf "${out:?}"
   mkdir -p "$out"
   uv pip install --quiet \
     --target "$out" \
@@ -28,7 +28,7 @@ for fn in "${FUNCTIONS[@]}"; do
     --only-binary :all: \
     --no-binary http-ece \
     -r "$ROOT/services/requirements/$fn.txt"
-  rm -rf "$out"/boto3* "$out"/botocore* "$out"/s3transfer* "$out"/jmespath* "$out"/bin
+  rm -rf "${out:?}"/boto3* "${out:?}"/botocore* "${out:?}"/s3transfer* "${out:?}"/jmespath* "${out:?}"/bin
   cp -R "$ROOT/services/beacon_core" "$out/beacon_core"
   cp -R "$ROOT/services/$fn" "$out/$fn"
   find "$out" -type d -name __pycache__ -prune -exec rm -rf {} +

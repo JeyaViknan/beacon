@@ -96,3 +96,27 @@ make deploy-web       # build, sync to S3, invalidate CloudFront
 2. Open **Beacon from the Home Screen** (not Safari) and log in. The installed app has its own storage.
 3. **Settings → Enable notifications → Allow.** Settings should then show Push: 1 device.
 4. **Send test notification.** A push ("🔔 Beacon test notification") and an email arrive within seconds.
+
+## CI/CD setup (M6 checkpoint)
+
+CI (`.github/workflows/ci.yml`) runs on every PR and branch push. Deploys (`deploy.yml`) run on every push to `main`: CI, then your approval, then OIDC into AWS, `terraform plan` + `apply`, web publish, and a smoke test. No AWS keys are stored in GitHub.
+
+1. Create the repo **JeyaViknan/beacon** on GitHub, **public** (required-reviewer approvals are free only on public repos). Don't add a README, .gitignore or licence; the repo already has them.
+2. **Settings → Environments → New environment** `production`:
+   - **Required reviewers:** add yourself.
+   - **Deployment branches and tags:** *Selected branches* → `main`.
+3. **Settings → Secrets and variables → Actions**:
+
+   | Kind | Name | Value |
+   |---|---|---|
+   | Variable | `AWS_DEPLOY_ROLE_ARN` | `terraform -chdir=infra/bootstrap output -raw deploy_role_arn` |
+   | Variable | `AWS_REGION` | `ap-south-1` |
+   | Variable | `TF_STATE_BUCKET` | `terraform -chdir=infra/bootstrap output -raw state_bucket` |
+   | Variable | `VITE_VAPID_PUBLIC_KEY` | the value in `web/.env.local` (public key, not secret) |
+   | **Secret** | `ALERT_EMAIL` | your alert email (a secret so logs mask it) |
+
+4. Push, then approve the run under **Actions → Deploy → Review deployments**:
+   ```bash
+   git remote add origin git@github.com:JeyaViknan/beacon.git
+   git push -u origin main
+   ```
