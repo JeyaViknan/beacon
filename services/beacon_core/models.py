@@ -36,6 +36,7 @@ class AlertEvent(StrEnum):
     TLS_EXPIRING = "TLS_EXPIRING"
     DAILY_SUMMARY = "DAILY_SUMMARY"
     TEST = "TEST"
+    ACKNOWLEDGED = "ACKNOWLEDGED"  # PagerDuty acknowledge only; no push or email
 
 
 class Severity(StrEnum):

@@ -61,7 +61,8 @@ class Target:
     host: str
     port: int
     addresses: tuple[str, ...]
-    pinned_url: str  # same URL with the host replaced by the checked IP
+    ip: str  # the checked address we connect to
+    pinned_url: str  # same URL with the host replaced by ``ip``
     host_header: str  # what to send as Host (includes a non-default port)
 
 
@@ -148,13 +149,15 @@ async def resolve_target(url: str, resolver: Resolver = system_resolver) -> Targ
         bracketed = f"[{name}]" if ":" in name else name
         return bracketed if port == default_port else f"{bracketed}:{port}"
 
+    pinned_ip = _prefer_ipv4(addresses)
     return Target(
         url=urlunsplit(parts),
         scheme=parts.scheme,
         host=host,
         port=port,
         addresses=addresses,
-        pinned_url=urlunsplit(parts._replace(netloc=netloc_for(_prefer_ipv4(addresses)))),
+        ip=pinned_ip,
+        pinned_url=urlunsplit(parts._replace(netloc=netloc_for(pinned_ip))),
         host_header=netloc_for(host),
     )
 
