@@ -623,7 +623,7 @@ beacon/
 | Milestone | State | Notes |
 |---|---|---|
 | M0 | done | Scaffold, pinned deps, ruff/pytest/coverage, Makefile, Vite+React+TS+Tailwind skeleton. Python 3.12 via uv. |
-| M1 | not started | |
+| M1 | done | Models, pure state machine (quorum, freshness, same-minute re-eval, degraded, pause/resume, ack), uptime/p95/error budget, time utils. 141 tests, 100% core coverage. ADR 0005. |
 | M2 | not started | |
 | M3 | not started | |
 | M4 | not started | |
