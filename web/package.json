@@ -7,9 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.sw.json",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dev:mock": "VITE_MOCK=1 vite"
   },
   "dependencies": {
     "@hookform/resolvers": "5.9.2",

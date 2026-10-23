@@ -627,7 +627,7 @@ beacon/
 | M2 | done | SSRF guard with DNS check + IP pinning (Host/SNI), checks (status ranges, keyword ≤1 MB, ≤3 redirects re-checked, error texts), snapshot cache, probe handler (one SQS msg/run). ADR 0010. |
 | M3 | done | Repo (one TransactWriteItems per result, optimistic lock), processor (partial batch failures, healthchecks ping), notifier (Web Push + PagerDuty), API (all §9 routes, origin header, JWT, throttle), maintenance (TLS + daily summary), demo target. Redelivery + concurrent-duplicate tests pass. ADR 0011. |
 | M4 | ⛔ waiting for Jeya | Terraform bootstrap + main + probe module (`terraform validate` clean; provider 6.x per ADR 0012), deterministic arm64 zips, put_secrets / vapid / hash / seed / deploy-web scripts. Next: Jeya runs bootstrap apply → main apply → put_secrets → `/api/health` via CloudFront (README “First deploy”). |
-| M5 | not started | |
+| M5 | ⛔ waiting for Jeya | PWA complete: all §3 screens, SW (precache, network-first /api, push + click), manifest + icons, install tip, offline banner, dark/light. 65 Vitest tests; previewed at iPhone size with the mock API. Next: Jeya deploys the web app (`make deploy-web`), installs on iPhone, enables push, sends a test notification (README “Install on iPhone”). |
 | M6 | not started | |
 | M7 | not started | |
 | M8 | not started | |

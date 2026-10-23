@@ -1,7 +1,55 @@
+import { Suspense, lazy, useSyncExternalStore } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Skeleton } from "./components/Feedback";
+import { Layout } from "./components/Layout";
+import { getToken, onAuthChange } from "./lib/auth";
+import HomePage from "./pages/HomePage";
+import IncidentsPage from "./pages/IncidentsPage";
+import LoginPage from "./pages/LoginPage";
+import NotFoundPage from "./pages/NotFoundPage";
+import ProductFormPage from "./pages/ProductFormPage";
+import SettingsPage from "./pages/SettingsPage";
+
+// The detail page carries the charting library; load it on demand so Home stays fast.
+const ProductPage = lazy(() => import("./pages/ProductPage"));
+
+function useToken(): string | null {
+  return useSyncExternalStore(onAuthChange, () => getToken());
+}
+
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const token = useToken();
+  const location = useLocation();
+  if (!token) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
-    <main className="min-h-dvh bg-slate-950 p-4 text-slate-100">
-      <h1 className="text-2xl font-semibold">Beacon</h1>
-    </main>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        element={
+          <RequireAuth>
+            <Layout />
+          </RequireAuth>
+        }
+      >
+        <Route index element={<HomePage />} />
+        <Route
+          path="p/:id"
+          element={
+            <Suspense fallback={<Skeleton className="mt-16 h-64 w-full rounded-2xl" />}>
+              <ProductPage />
+            </Suspense>
+          }
+        />
+        <Route path="p/:id/edit" element={<ProductFormPage mode="edit" />} />
+        <Route path="new" element={<ProductFormPage mode="create" />} />
+        <Route path="incidents" element={<IncidentsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+    </Routes>
   );
 }

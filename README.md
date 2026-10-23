@@ -73,3 +73,24 @@ curl -s -o /dev/null -w "%{http_code}\n" "$(terraform -chdir=infra/main output -
 ```
 
 Confirm the SNS subscription emails (product alerts and ops alerts) and the AWS Budgets email when they arrive.
+
+## Web app
+
+```bash
+cd web
+npm ci
+npm run dev:mock      # fake data, no AWS needed: http://localhost:5173 (any password)
+BEACON_API_ORIGIN=https://<cloudfront domain> npm run dev   # against the real API
+```
+
+## Install on iPhone (M5 checkpoint)
+
+```bash
+export VITE_VAPID_PUBLIC_KEY=<public key from `make vapid`; must pair with the private key in SSM>
+make deploy-web       # build, sync to S3, invalidate CloudFront
+```
+
+1. On the iPhone, open the CloudFront URL in **Safari** → **Share** → **Add to Home Screen**.
+2. Open **Beacon from the Home Screen** (not Safari) and log in. The installed app has its own storage.
+3. **Settings → Enable notifications → Allow.** Settings should then show Push: 1 device.
+4. **Send test notification.** A push ("🔔 Beacon test notification") and an email arrive within seconds.

@@ -1,1 +1,193 @@
 @import "tailwindcss";
+
+/*
+  Beacon tokens. Dark ("night watch") is the default; light follows prefers-color-scheme.
+  Status colours are fixed by the spec and always paired with an icon + text label.
+*/
+:root {
+  color-scheme: dark light;
+  --bg: #0c1420;
+  --surface: #131d2b;
+  --surface-2: #1a2638;
+  --line: #22324a;
+  --text: #e6edf5;
+  --muted: #8a9bb3;
+  --focus: #93c5fd;
+
+  --up: #22c55e;
+  --degraded: #f59e0b;
+  --down: #ef4444;
+  --paused: #9ca3af;
+  --unknown: #64748b;
+
+  /* Text versions of the status colours (same hue, readable on --bg). */
+  --up-ink: #4ade80;
+  --degraded-ink: #fbbf24;
+  --down-ink: #f87171;
+  --paused-ink: #cbd5e1;
+  --unknown-ink: #94a3b8;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f3f6fa;
+    --surface: #ffffff;
+    --surface-2: #eef2f7;
+    --line: #d9e1ec;
+    --text: #0e1726;
+    --muted: #5b6b82;
+    --focus: #1d4ed8;
+
+    --up-ink: #15803d;
+    --degraded-ink: #b45309;
+    --down-ink: #b91c1c;
+    --paused-ink: #4b5563;
+    --unknown-ink: #475569;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-up: var(--up);
+  --color-degraded: var(--degraded);
+  --color-down: var(--down);
+  --color-paused: var(--paused);
+  --color-unknown: var(--unknown);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ the beacon lamp (signature) */
+
+.lamp {
+  --state: var(--up);
+  --sweep: 9s;
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex: none;
+  border-radius: 9999px;
+  isolation: isolate;
+}
+
+.lamp[data-state="degraded"] {
+  --state: var(--degraded);
+  --sweep: 5s;
+}
+
+.lamp[data-state="down"] {
+  --state: var(--down);
+  --sweep: 2.4s;
+}
+
+.lamp[data-state="unknown"] {
+  --state: var(--unknown);
+}
+
+/* The beam: a narrow wedge of light that sweeps around the lamp. */
+.lamp::before {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  border-radius: 9999px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 292deg,
+    color-mix(in oklab, var(--state) 10%, transparent) 318deg,
+    color-mix(in oklab, var(--state) 55%, transparent) 350deg,
+    transparent 360deg
+  );
+  -webkit-mask: radial-gradient(circle, transparent 18px, #000 19px);
+  mask: radial-gradient(circle, transparent 18px, #000 19px);
+  animation: lamp-sweep var(--sweep) linear infinite;
+  z-index: -1;
+}
+
+/* The lens: a ring of the state colour around a bright core. */
+.lamp::after {
+  content: "";
+  position: absolute;
+  inset: 16px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 50% 45%, #fff 0 18%, var(--state) 46%, color-mix(in oklab, var(--state) 70%, #000) 100%);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--state) 25%, transparent),
+    0 0 22px 4px color-mix(in oklab, var(--state) 45%, transparent);
+}
+
+.lamp[data-state="down"]::after {
+  animation: lamp-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes lamp-sweep {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes lamp-pulse {
+  50% {
+    box-shadow:
+      0 0 0 6px color-mix(in oklab, var(--state) 30%, transparent),
+      0 0 34px 10px color-mix(in oklab, var(--state) 55%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lamp::before,
+  .lamp::after {
+    animation: none !important;
+  }
+  .skeleton {
+    animation: none !important;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--line) 50%, var(--surface-2) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
