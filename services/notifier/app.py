@@ -2,7 +2,6 @@
 
 import hashlib
 import json
-import os
 from typing import Any
 
 import httpx
@@ -85,7 +84,7 @@ def pagerduty_body(alert: Alert, routing_key: str) -> dict[str, Any]:
             "component": alert.product_id,
             "custom_details": {"event": alert.event.value},
         }
-        app_url = os.environ.get("APP_URL")
+        app_url = aws.app_url()
         if app_url:
             body["links"] = [
                 {"href": f"{app_url.rstrip('/')}{alert.url}", "text": "Open in Beacon"}

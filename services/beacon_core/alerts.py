@@ -146,11 +146,15 @@ def email_body(alert: Alert, app_url: str | None) -> str:
     return "\n".join(lines)
 
 
-def sns_publish_kwargs(alert: Alert, topic_arn: str, app_url: str | None) -> dict[str, Any]:
+def sns_publish_kwargs(
+    alert: Alert, topic_arn: str, app_url: str | None, *, email: bool = True
+) -> dict[str, Any]:
+    """``email`` feeds the email subscription's filter policy (Settings -> email on/off)."""
     payload = alert.model_dump_json()
     attributes: dict[str, dict[str, str]] = {
         "event": {"DataType": "String", "StringValue": alert.event.value},
         "severity": {"DataType": "String", "StringValue": alert.severity.value},
+        "email": {"DataType": "String", "StringValue": "on" if email else "off"},
     }
     if alert.product_id:
         attributes["productId"] = {"DataType": "String", "StringValue": alert.product_id}

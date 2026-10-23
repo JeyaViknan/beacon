@@ -14,3 +14,62 @@ make setup    # Python 3.12 venv + dev dependencies (needs uv)
 make lint test
 make web      # frontend typecheck, lint, test, build
 ```
+
+## Architecture
+
+```mermaid
+flowchart LR
+  phone[iPhone PWA] -->|HTTPS| cf[CloudFront]
+  cf -->|/*| s3[(S3 web app)]
+  cf -->|/api/* + origin header| api[Lambda: api]
+  sched[EventBridge Scheduler<br/>every minute] --> probe[Lambda: probe]
+  probe -->|1 read| ddb[(DynamoDB beacon)]
+  probe -->|1 message/run| sqs[[SQS results + DLQ]]
+  sqs --> proc[Lambda: processor]
+  proc -->|transaction| ddb
+  proc -->|heartbeat| hc[healthchecks.io]
+  proc --> sns[[SNS product alerts]]
+  sns --> email[Email]
+  sns --> notif[Lambda: notifier]
+  notif --> push[Web Push] & pd[PagerDuty]
+  api --> ddb
+  alarms[CloudWatch alarms] --> ops[[SNS ops alerts]] --> email & pd
+```
+
+Design decisions are in [`docs/adr/`](docs/adr/); the full specification is [`HANDOVER.md`](HANDOVER.md).
+
+## First deploy (M4 checkpoint)
+
+Prerequisites: AWS CLI (`brew install awscli`), Terraform ≥ 1.10, `uv`, and admin credentials for your AWS account (`aws configure sso` or a profile), exported as `AWS_PROFILE`.
+
+```bash
+# 1. Bootstrap (once): state bucket, GitHub OIDC role, $1 budget
+cd infra/bootstrap
+terraform init
+terraform apply -var alert_email=you@example.com
+cd ../..
+
+# 2. Build the Lambda zips
+make build
+
+# 3. Main stack (CloudFront takes ~5-10 minutes to create)
+export TF_STATE_BUCKET=<state_bucket output from step 1>
+export TF_VAR_alert_email=you@example.com
+make plan
+make apply
+
+# 4. Secrets (after the first apply: Terraform creates placeholders, this overwrites them)
+make vapid          # keep the public key for the web build; paste the private key below
+make secrets
+
+# 5. Check
+curl -s "$(terraform -chdir=infra/main output -raw cloudfront_url)/api/health"   # {"status":"ok",...}
+curl -s -o /dev/null -w "%{http_code}\n" "$(terraform -chdir=infra/main output -raw api_function_url)api/health"   # 403
+
+# 6. Demo product
+.venv/bin/python scripts/seed_demo.py \
+  --app "$(terraform -chdir=infra/main output -raw cloudfront_url)" \
+  --target "$(terraform -chdir=infra/main output -raw demo_target_url)"
+```
+
+Confirm the SNS subscription emails (product alerts and ops alerts) and the AWS Budgets email when they arrive.

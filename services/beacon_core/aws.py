@@ -57,6 +57,11 @@ def param(name: str, *, max_age: float = 300.0) -> str | None:
     return value
 
 
+def app_url() -> str | None:
+    """Public URL of the app for links in emails/PagerDuty (env for tests, else SSM)."""
+    return os.environ.get("APP_URL") or param("/beacon/app_url", max_age=3600)
+
+
 def reset() -> None:
     """Forget clients and cached parameters (tests, or after rotating a secret)."""
     for fn in (table, repo, ssm, sns):

@@ -110,11 +110,12 @@ def publish(alerts: list[Alert]) -> None:
     """Publish after the state is committed. A failed publish is logged and counted, not retried
     through SQS (the redelivery would be a duplicate and skipped anyway). See ADR 0011."""
     topic = os.environ.get("PRODUCT_ALERTS_TOPIC_ARN")
-    if not topic:
+    if not topic or not alerts:
         return
+    email = settings().email_enabled
     for alert in alerts:
         try:
-            aws.sns().publish(**sns_publish_kwargs(alert, topic, os.environ.get("APP_URL")))
+            aws.sns().publish(**sns_publish_kwargs(alert, topic, aws.app_url(), email=email))
         except (ClientError, BotoCoreError):
             logger.exception("Failed to publish alert", extra={"product_id": alert.product_id})
             metrics.add_metric(name="NotificationsFailed", unit=MetricUnit.Count, value=1)

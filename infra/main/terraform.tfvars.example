@@ -1,0 +1,3 @@
+# Copy to terraform.tfvars (gitignored) for local plans. CI passes these as TF_VAR_* instead.
+alert_email   = "you@example.com"
+probe_regions = ["ap-south-1"]

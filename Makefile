@@ -35,8 +35,9 @@ validate: ## terraform fmt check + validate (no backend, no credentials needed)
 	cd infra/modules/probe && terraform init -backend=false -input=false >/dev/null && terraform validate
 	cd $(TF_MAIN) && terraform init -backend=false -input=false >/dev/null && terraform validate
 
-plan: build ## terraform plan for infra/main (needs AWS credentials)
-	cd $(TF_MAIN) && terraform init -input=false -backend-config="bucket=$${TF_STATE_BUCKET:?set TF_STATE_BUCKET}" && terraform plan -out tfplan
+plan: build ## terraform plan for infra/main (needs AWS creds, TF_STATE_BUCKET, TF_VAR_alert_email)
+	cd $(TF_MAIN) && terraform init -input=false -backend-config="bucket=$${TF_STATE_BUCKET:?set TF_STATE_BUCKET}"
+	cd $(TF_MAIN) && terraform plan -input=false -out tfplan -var "app_version=$$(git rev-parse --short HEAD)"
 
 apply: ## Apply the saved plan (Jeya only)
 	cd $(TF_MAIN) && terraform apply tfplan

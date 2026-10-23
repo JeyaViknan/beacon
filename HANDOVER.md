@@ -626,7 +626,7 @@ beacon/
 | M1 | done | Models, pure state machine (quorum, freshness, same-minute re-eval, degraded, pause/resume, ack), uptime/p95/error budget, time utils. 141 tests, 100% core coverage. ADR 0005. |
 | M2 | done | SSRF guard with DNS check + IP pinning (Host/SNI), checks (status ranges, keyword ≤1 MB, ≤3 redirects re-checked, error texts), snapshot cache, probe handler (one SQS msg/run). ADR 0010. |
 | M3 | done | Repo (one TransactWriteItems per result, optimistic lock), processor (partial batch failures, healthchecks ping), notifier (Web Push + PagerDuty), API (all §9 routes, origin header, JWT, throttle), maintenance (TLS + daily summary), demo target. Redelivery + concurrent-duplicate tests pass. ADR 0011. |
-| M4 | not started | |
+| M4 | ⛔ waiting for Jeya | Terraform bootstrap + main + probe module (`terraform validate` clean; provider 6.x per ADR 0012), deterministic arm64 zips, put_secrets / vapid / hash / seed / deploy-web scripts. Next: Jeya runs bootstrap apply → main apply → put_secrets → `/api/health` via CloudFront (README “First deploy”). |
 | M5 | not started | |
 | M6 | not started | |
 | M7 | not started | |

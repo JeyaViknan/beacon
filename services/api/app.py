@@ -201,7 +201,8 @@ def publish(alert: Alert) -> None:
     topic = os.environ.get("PRODUCT_ALERTS_TOPIC_ARN")
     if not topic:
         raise ApiError(503, "not_configured", "alerts topic is not configured")
-    aws.sns().publish(**sns_publish_kwargs(alert, topic, os.environ.get("APP_URL")))
+    email = repo().get_settings().email_enabled
+    aws.sns().publish(**sns_publish_kwargs(alert, topic, aws.app_url(), email=email))
 
 
 def republish_snapshot(changed: Product | None = None, deleted_id: str | None = None) -> None:

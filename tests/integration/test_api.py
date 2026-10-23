@@ -550,3 +550,11 @@ def test_settings_get_and_patch(env, token):
     assert patched["pushEnabled"] is True
     assert call("PATCH", "/api/settings", body={"quorum": 9}, token=token)[0] == 422
     assert call("PATCH", "/api/settings", body={"smsEnabled": True}, token=token)[0] == 422
+
+
+def test_email_toggle_sets_the_sns_email_attribute(env, token):
+    call("POST", "/api/notifications/test", token=token)
+    call("PATCH", "/api/settings", body={"emailEnabled": False}, token=token)
+    call("POST", "/api/notifications/test", token=token)
+    flags = [p["MessageAttributes"]["email"]["StringValue"] for p in env.published]
+    assert flags == ["on", "off"]

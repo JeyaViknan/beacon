@@ -35,8 +35,9 @@ def publish(alert: Alert) -> None:
     topic = os.environ.get("PRODUCT_ALERTS_TOPIC_ARN")
     if not topic:
         return
+    email = aws.repo().get_settings().email_enabled
     try:
-        aws.sns().publish(**sns_publish_kwargs(alert, topic, os.environ.get("APP_URL")))
+        aws.sns().publish(**sns_publish_kwargs(alert, topic, aws.app_url(), email=email))
     except (ClientError, BotoCoreError):
         logger.exception("Failed to publish alert", extra={"event": alert.event.value})
 
