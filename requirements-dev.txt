@@ -1,0 +1,13 @@
+# Everything needed to lint and test locally and in CI.
+-r services/requirements/api.txt
+-r services/requirements/probe.txt
+-r services/requirements/processor.txt
+-r services/requirements/notifier.txt
+-r services/requirements/maintenance.txt
+-r services/requirements/demo_target.txt
+boto3==1.43.118
+moto[dynamodb,sns,sqs,ssm]==5.2.4
+pytest==9.1.1
+pytest-cov==7.1.0
+respx==0.23.1
+ruff==0.17.2

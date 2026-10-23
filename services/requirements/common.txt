@@ -1,0 +1,3 @@
+# Shared by every Lambda. boto3/botocore come from the Lambda Python 3.12 runtime.
+aws-lambda-powertools[tracer]==3.37.0
+pydantic==2.14.1

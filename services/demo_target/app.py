@@ -1,0 +1,7 @@
+"""Lambda handler for demo_target (implemented in a later milestone)."""
+
+from typing import Any
+
+
+def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
+    raise NotImplementedError("demo_target is not implemented yet")

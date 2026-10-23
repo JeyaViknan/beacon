@@ -1,0 +1,54 @@
+[project]
+name = "beacon"
+version = "0.1.0"
+description = "Personal uptime and incident monitor on AWS serverless (free tier)"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["services", "tests", "scripts"]
+extend-exclude = ["web", "dist", "infra"]
+
+[tool.ruff.lint]
+select = [
+  "E", "W", "F",   # pycodestyle + pyflakes
+  "I",             # isort
+  "UP",            # pyupgrade
+  "B",             # bugbear
+  "SIM",           # simplify
+  "RUF",           # ruff-specific
+  "ANN",           # type hints everywhere
+  "BLE",           # no blind `except Exception` without re-raise/log
+  "T20",           # no print
+  "S",             # bandit (security)
+  "DTZ",           # timezone-aware datetimes only
+]
+ignore = [
+  "ANN401",  # Any is sometimes the honest type at AWS boundaries
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN", "S101", "S105", "S106", "S108", "S311", "PLR2004"]
+"scripts/**" = ["T20"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+pythonpath = ["services"]
+testpaths = ["tests"]
+addopts = "-q --strict-markers --cov=beacon_core --cov-report=term-missing:skip-covered --cov-fail-under=85"
+filterwarnings = [
+  "error::pytest.PytestUnraisableExceptionWarning",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["services/beacon_core"]
+
+[tool.coverage.report]
+exclude_also = [
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+]

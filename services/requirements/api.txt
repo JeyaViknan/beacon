@@ -1,0 +1,5 @@
+-r common.txt
+httpx==0.28.1
+PyJWT==2.15.1
+argon2-cffi==25.1.0
+python-ulid==4.0.1
