@@ -70,7 +70,7 @@ describe("HomePage", () => {
       "GET /summary": [200, { ...summary, up: 0, degraded: 0, down: 0, paused: 0, total: 0, state: "operational", label: "All systems operational" }],
     });
     renderWithApp(<HomePage />);
-    expect(await screen.findByText("No products yet — tap + to add your first one.")).toBeInTheDocument();
+    expect(await screen.findByText("No Products Yet")).toBeInTheDocument();
     expect(await screen.findByText("All systems operational")).toBeInTheDocument();
   });
 

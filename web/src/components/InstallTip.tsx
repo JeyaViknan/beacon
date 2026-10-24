@@ -1,27 +1,29 @@
 import { useState } from "react";
 import { currentInstallEnv, dismissInstallTip, shouldShowInstallTip } from "../lib/install";
 import { isNativeApp } from "../lib/platform";
-import { CloseIcon, ShareIcon } from "./Icons";
+import { Icon } from "./Icon";
 
 export function InstallTip() {
   const [visible, setVisible] = useState(() => !isNativeApp() && shouldShowInstallTip(currentInstallEnv()));
   if (!visible) return null;
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-line bg-surface-2 p-3 text-sm" role="note">
-      <ShareIcon className="mt-0.5 h-5 w-5 flex-none text-muted" />
-      <p className="flex-1">
-        Tap <strong>Share</strong> → <strong>Add to Home Screen</strong> to get alerts on this iPhone.
+    <div className="flex items-start gap-3 rounded-[26px] bg-cell py-3 pr-2 pl-4" role="note">
+      <span className="pt-0.5 text-tint">
+        <Icon name="square.and.arrow.up" className="size-7" />
+      </span>
+      <p className="flex-1 pt-1 text-subhead">
+        Tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>, to get alerts on this iPhone.
       </p>
       <button
         type="button"
         aria-label="Dismiss tip"
-        className="-m-2 flex h-11 w-11 flex-none items-center justify-center text-muted"
+        className="flex size-9 flex-none items-center justify-center rounded-full text-label-3 active:opacity-60"
         onClick={() => {
           dismissInstallTip();
           setVisible(false);
         }}
       >
-        <CloseIcon className="h-4 w-4" />
+        <Icon name="xmark" className="size-5" />
       </button>
     </div>
   );

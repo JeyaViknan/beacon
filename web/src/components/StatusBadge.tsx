@@ -1,25 +1,20 @@
 import { STATUS } from "../lib/status";
 import type { Status } from "../lib/types";
-import { StatusIcon } from "./Icons";
+import { Icon } from "./Icon";
 
+/** Status as symbol + text (never colour alone). */
 export function StatusBadge({ status, size = "sm" }: { status: Status; size?: "sm" | "lg" }) {
   const meta = STATUS[status];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-semibold ${size === "lg" ? "text-lg" : "text-sm"}`}
+      className={`inline-flex items-center gap-1 font-semibold ${size === "lg" ? "text-title3" : "text-subhead"}`}
       style={{ color: meta.ink }}
       data-status={status}
     >
-      <StatusIcon status={status} className={size === "lg" ? "h-5 w-5" : "h-4 w-4"} />
+      <span style={{ color: meta.color }}>
+        <Icon name={meta.symbol} className={size === "lg" ? "size-9" : "size-6"} />
+      </span>
       {meta.label}
-    </span>
-  );
-}
-
-export function KindBadge({ kind }: { kind: "personal" | "client" }) {
-  return (
-    <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium tracking-wide text-muted uppercase">
-      {kind === "client" ? "Client work" : "Personal"}
     </span>
   );
 }

@@ -130,12 +130,14 @@ CI (`.github/workflows/ci.yml`) runs on every PR and branch push. Deploys (`depl
 
 ## Native iOS app (Capacitor)
 
-The same React screens packaged as a native iPhone app (ADR 0015): own icon, launch screen, no browser UI, haptics. It's signed with a **free Apple ID**, so there's no native push (alerts come by email and through the installed web app's push), and the app must be reinstalled every **7 days**.
+The same React screens packaged as a native iPhone app (ADR 0015), designed the way iOS apps are (ADR 0016): Apple's system colours and font, inset grouped lists, Liquid Glass bars, real SF Symbols, haptics, and an app icon with iOS's default, dark and tinted appearances. It's signed with a **free Apple ID**, so there's no native push (alerts come by email and through the installed web app's push), and the app must be reinstalled every **7 days**.
 
 ```bash
-./scripts/build_ios.sh          # build the screens for the app and copy them into web/ios
+./scripts/build_ios.sh          # export SF Symbols, build the screens, copy them into web/ios
 open web/ios/App/App.xcodeproj  # then follow the steps below
 ```
+
+`build_ios.sh` exports the symbols from the **SF Symbols** app in `/Applications` into `web/.symbols/`, which is never committed: Apple licenses SF Symbols for Apple-platform apps only. Without the app, the build uses Beacon's own look-alike icons (the ones the public web app uses).
 
 First install on your iPhone:
 1. **Xcode → Settings → Accounts → +** → Apple ID → sign in.
@@ -144,4 +146,4 @@ First install on your iPhone:
 4. Pick your iPhone as the run destination at the top of Xcode and press **Run (⌘R)**.
 5. The first launch is blocked until you trust the developer: **Settings → General → VPN & Device Management → your Apple ID → Trust**. Then open **Beacon**.
 
-Every 7 days: plug in and press **Run** again.
+Every 7 days: plug in and press **Run** again. If a build seems to hang while signing, macOS is asking for keychain access: enter your Mac password and choose **Always Allow**.

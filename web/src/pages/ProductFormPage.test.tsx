@@ -35,7 +35,7 @@ describe("ProductFormPage", () => {
     renderWithApp(<ProductFormPage mode="create" />, "/new");
     await userEvent.type(screen.getByLabelText("Name (optional)"), "Nankiv");
     await userEvent.type(screen.getByLabelText("Link to check"), "https://nankiv.example/health");
-    await userEvent.click(screen.getByText("Notes and links"));
+    await userEvent.click(screen.getByText("Notes and Links"));
     await userEvent.type(screen.getByLabelText("Stack"), "React, AWS");
     await userEvent.click(screen.getByRole("button", { name: "Add and check" }));
     await screen.findByRole("button", { name: /Add and check|Saving/ });

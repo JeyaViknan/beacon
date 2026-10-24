@@ -39,7 +39,7 @@ export default function App() {
         <Route
           path="p/:id"
           element={
-            <Suspense fallback={<Skeleton className="mt-16 h-64 w-full rounded-2xl" />}>
+            <Suspense fallback={<div className="px-4 pt-28"><Skeleton className="h-64 w-full rounded-[26px]" /></div>}>
               <ProductPage />
             </Suspense>
           }

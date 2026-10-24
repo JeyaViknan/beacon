@@ -37,11 +37,11 @@ describe("status presentation", () => {
   });
 
   it.each([
-    [null, "var(--line)"],
-    [1, "var(--up)"],
-    [0.9995, "var(--up)"],
-    [0.97, "var(--degraded)"],
-    [0.5, "var(--down)"],
+    [null, "var(--fill)"],
+    [1, "var(--green)"],
+    [0.9995, "var(--green)"],
+    [0.97, "var(--orange)"],
+    [0.5, "var(--red)"],
   ])("strip colour for %s is %s", (ratio, color) => {
     expect(stripColor(ratio)).toBe(color);
   });

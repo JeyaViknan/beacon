@@ -85,7 +85,7 @@ describe("ProductPage", () => {
   it("doesn't run a check on a normal visit", async () => {
     const calls = mockApi({ "GET /products/NEW1": [200, detail] });
     renderPage();
-    expect(await screen.findByRole("button", { name: "Test now" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Test Now" })).toBeInTheDocument();
     expect(screen.queryByText(/from now on/)).not.toBeInTheDocument();
     expect(calls.some((c) => c.method === "POST")).toBe(false);
   });

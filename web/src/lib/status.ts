@@ -1,18 +1,21 @@
+import type { SymbolName } from "../symbols/names";
 import type { Status } from "./types";
 
 export interface StatusMeta {
   label: string;
-  /** CSS custom properties: dot/bar colour and readable text colour. */
+  /** One symbol per status, so status never relies on colour alone. */
+  symbol: SymbolName;
+  /** CSS custom properties: system colour for symbols and bars, and a text-safe version. */
   color: string;
   ink: string;
 }
 
 export const STATUS: Record<Status, StatusMeta> = {
-  DOWN: { label: "Down", color: "var(--down)", ink: "var(--down-ink)" },
-  DEGRADED: { label: "Degraded", color: "var(--degraded)", ink: "var(--degraded-ink)" },
-  UP: { label: "Up", color: "var(--up)", ink: "var(--up-ink)" },
-  UNKNOWN: { label: "Waiting", color: "var(--unknown)", ink: "var(--unknown-ink)" },
-  PAUSED: { label: "Paused", color: "var(--paused)", ink: "var(--paused-ink)" },
+  DOWN: { label: "Down", symbol: "xmark.circle.fill", color: "var(--red)", ink: "var(--red-ink)" },
+  DEGRADED: { label: "Degraded", symbol: "exclamationmark.triangle.fill", color: "var(--orange)", ink: "var(--orange-ink)" },
+  UP: { label: "Up", symbol: "checkmark.circle.fill", color: "var(--green)", ink: "var(--green-ink)" },
+  UNKNOWN: { label: "Waiting", symbol: "clock.fill", color: "var(--gray)", ink: "var(--gray-ink)" },
+  PAUSED: { label: "Paused", symbol: "pause.circle.fill", color: "var(--gray)", ink: "var(--gray-ink)" },
 };
 
 const ORDER: Record<Status, number> = { DOWN: 0, DEGRADED: 1, UP: 2, UNKNOWN: 3, PAUSED: 4 };
@@ -29,10 +32,10 @@ export function sortProducts<T extends { status: Status; sortOrder: number; name
 
 /** Colour for one hour of the 24h strip, from that hour's uptime ratio. */
 export function stripColor(ratio: number | null): string {
-  if (ratio === null) return "var(--line)";
-  if (ratio >= 0.999) return "var(--up)";
-  if (ratio >= 0.95) return "var(--degraded)";
-  return "var(--down)";
+  if (ratio === null) return "var(--fill)";
+  if (ratio >= 0.999) return "var(--green)";
+  if (ratio >= 0.95) return "var(--orange)";
+  return "var(--red)";
 }
 
 export function formatUptime(percent: number | null): string {

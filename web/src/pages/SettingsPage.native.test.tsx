@@ -20,6 +20,6 @@ describe("SettingsPage in the native app", () => {
     renderWithApp(<SettingsPage />, "/settings");
     expect(await screen.findByText(/Alerts reach you by/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Enable notifications/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Send test notification" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send Test Notification" })).toBeInTheDocument();
   });
 });

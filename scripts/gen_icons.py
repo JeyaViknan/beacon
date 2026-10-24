@@ -2,10 +2,13 @@
 
     python scripts/gen_icons.py
 
-The mark is a lamp with two beams sweeping out to the sides, on the app's night-navy
-background. Writes web/public/icons/*.png (web app) and, when the native project exists,
-the iOS app icon and launch image in web/ios/App/App/Assets.xcassets. The SVG favicon is
-drawn by hand (web/public).
+The mark is a live monitoring trace: a flat line, one heartbeat, and a bright dot where the
+trace is "now" (the beacon). It is Beacon's own drawing; Apple doesn't allow SF Symbols in app
+icons. Writes:
+- web/public/icons/*.png: the web app's icons (white trace on iOS green);
+- in the native project (web/ios/...): the iOS app icon in its three iOS 18+ appearances
+  (default, dark, tinted), and plain launch images in the app's light and dark backgrounds.
+The SVG favicon (web/public/favicon.svg) is the same mark, written by hand.
 """
 
 import math
@@ -17,99 +20,103 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "web" / "public" / "icons"
 IOS_ASSETS = ROOT / "web" / "ios" / "App" / "App" / "Assets.xcassets"
 
-BG = (12, 20, 32)
-BEAM = (255, 233, 176)
-CORE = (255, 247, 226)
-RING = (255, 214, 138)
+# The trace, in 0..1 icon coordinates (y down), and the dot at its leading edge.
+TRACE = [
+    (0.17, 0.535),
+    (0.36, 0.535),
+    (0.435, 0.305),
+    (0.525, 0.745),
+    (0.595, 0.455),
+    (0.64, 0.535),
+    (0.725, 0.535),
+]
+DOT = (0.81, 0.535)
+STROKE = 0.064  # line width
+DOT_R = 0.052
+
+GREEN_TOP, GREEN_BOTTOM = (92, 226, 124), (24, 166, 72)  # the default icon's background
+DARK_TOP, DARK_BOTTOM = (44, 44, 46), (8, 8, 9)  # dark appearance background
+TRACE_DARK_TOP, TRACE_DARK_BOTTOM = (122, 240, 150), (48, 209, 88)  # systemGreen, lit from above
+LIGHT_BG, DARK_BG = (242, 242, 247), (0, 0, 0)  # systemGroupedBackground, for launch images
 
 
 def clamp(x: float) -> float:
     return 0.0 if x < 0 else 1.0 if x > 1 else x
 
 
-def blend(dst: list[float], color: tuple[int, int, int], alpha: float) -> None:
-    for i in range(3):
-        dst[i] = dst[i] * (1 - alpha) + color[i] * alpha
+def mix(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> list[float]:
+    return [a[i] + (b[i] - a[i]) * t for i in range(3)]
 
 
-def render(size: int, scale: float = 1.0, transparent_bg: bool = False) -> bytes:
-    """``scale`` < 1 shrinks the mark towards the centre (maskable safe zone)."""
+def segment_distance(px: float, py: float, a: tuple[float, float], b: tuple[float, float]) -> float:
+    ax, ay = a
+    bx, by = b
+    dx, dy = bx - ax, by - ay
+    t = clamp(((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy))
+    return math.hypot(px - (ax + t * dx), py - (ay + t * dy))
+
+
+def mark_distance(x: float, y: float, scale: float) -> float:
+    """Signed distance to the mark (negative inside), scaled about the centre by `scale`."""
+    ux, uy = 0.5 + (x - 0.5) / scale, 0.5 + (y - 0.5) / scale
+    line = (
+        min(segment_distance(ux, uy, TRACE[i], TRACE[i + 1]) for i in range(len(TRACE) - 1))
+        - STROKE / 2
+    )
+    dot = math.hypot(ux - DOT[0], uy - DOT[1]) - DOT_R
+    return min(line, dot) * scale
+
+
+def render(size: int, style: str, scale: float = 1.0) -> bytes:
+    """RGBA rows in one style: "green" (the default icon), "dark", "tinted" (grayscale), or
+    "badge" (white on clear)."""
     px = 1.0 / size
-    cx, cy = 0.5, 0.53
-    core_r = 0.092 * scale
-    ring_in, ring_out = 0.108 * scale, 0.132 * scale
-    half_angle = math.radians(13)
-    beam_len = 0.47 * scale
     rows = bytearray()
     for j in range(size):
         rows.append(0)  # PNG filter: none
         y = (j + 0.5) * px
         for i in range(size):
             x = (i + 0.5) * px
-            color = [float(c) for c in BG]
-            alpha_out = 0.0 if transparent_bg else 1.0
-            dx, dy = x - cx, cy - y
-            d = math.hypot(dx, dy)
-            if d > beam_len + 0.03 * scale + 2 * px:
-                # Far from the mark: plain background (keeps large launch images fast).
-                rows += bytes(BG) + bytes([0 if transparent_bg else 255])
-                continue
+            if style == "green":
+                bg = mix(GREEN_TOP, GREEN_BOTTOM, y)
+                # A soft highlight across the top, as Apple's icons are lit from above.
+                lift = 0.10 * clamp(1 - math.hypot((x - 0.5) * 1.1, y + 0.15) / 0.9)
+                bg = [c + (255 - c) * lift for c in bg]
+            elif style == "dark":
+                bg = mix(DARK_TOP, DARK_BOTTOM, y)
+            elif style == "tinted":
+                bg = [0.0, 0.0, 0.0]
+            else:
+                bg = [255.0, 255.0, 255.0]
+            alpha = 0.0 if style == "badge" else 1.0
 
-            # Beams: wedges to the left and right, fading with distance.
-            theta = abs(math.atan2(dy, dx))
-            off = min(theta, math.pi - theta)  # angle from the horizontal axis
-            edge = (half_angle - off) * d / px  # ~pixels inside the wedge edge
-            if d > core_r and d < beam_len:
-                fade = 1 - (d - core_r) / (beam_len - core_r)
-                a = 0.78 * fade * fade * clamp(edge + 0.5)
-                if a > 0:
-                    blend(color, BEAM, a)
-                    alpha_out = max(alpha_out, a)
-
-            # Soft glow around the lamp.
-            glow = 0.35 * math.exp(-max(0.0, d - core_r) / (0.05 * scale))
-            blend(color, RING, glow)
-            alpha_out = max(alpha_out, glow)
-
-            # Lens ring and core (anti-aliased by signed distance).
-            ring_cov = clamp(
-                0.5 - (abs(d - (ring_in + ring_out) / 2) - (ring_out - ring_in) / 2) / px
-            )
-            if ring_cov:
-                blend(color, RING, ring_cov * 0.9)
-                alpha_out = max(alpha_out, ring_cov)
-            core_cov = clamp(0.5 - (d - core_r) / px)
-            if core_cov:
-                blend(color, CORE, core_cov)
-                alpha_out = max(alpha_out, core_cov)
-
-            rows += bytes(round(c) for c in color) + bytes([round(alpha_out * 255)])
+            d = mark_distance(x, y, scale)
+            if d < 0.08:
+                if style == "green":
+                    # Soft shadow under the white mark, a touch below it.
+                    sd = mark_distance(x, y - 0.012 * scale, scale)
+                    shade = 0.16 * clamp(1 - max(sd, 0.0) / (0.03 * scale))
+                    bg = [c * (1 - shade) for c in bg]
+                cover = clamp(0.5 - d / px)
+                if cover:
+                    if style == "dark":
+                        ink = mix(TRACE_DARK_TOP, TRACE_DARK_BOTTOM, clamp((y - 0.28) / 0.5))
+                    else:
+                        ink = [255.0, 255.0, 255.0]
+                    bg = [bg[k] * (1 - cover) + ink[k] * cover for k in range(3)]
+                    alpha = max(alpha, cover)
+            rows += bytes(round(c) for c in bg) + bytes([round(alpha * 255)])
     return bytes(rows)
 
 
-def render_badge(size: int) -> bytes:
-    """Monochrome notification badge: white lamp + beams on transparent."""
-    px = 1.0 / size
-    rows = bytearray()
-    for j in range(size):
-        rows.append(0)
-        y = (j + 0.5) * px
-        for i in range(size):
-            x = (i + 0.5) * px
-            dx, dy = x - 0.5, 0.5 - y
-            d = math.hypot(dx, dy)
-            theta = abs(math.atan2(dy, dx))
-            off = min(theta, math.pi - theta)
-            a = clamp(0.5 - (d - 0.16) / px)
-            if 0.2 < d < 0.48:
-                a = max(a, clamp((math.radians(16) - off) * d / px + 0.5) * (1 - (d - 0.2) / 0.28))
-            rows += bytes([255, 255, 255, round(a * 255)])
-    return bytes(rows)
+def solid(size: int, color: tuple[int, int, int]) -> bytes:
+    row = b"\x00" + bytes(color) * size
+    return row * size
 
 
 def png(size: int, raw: bytes, *, alpha: bool = True) -> bytes:
-    """Encode filtered RGBA rows. ``alpha=False`` writes RGB: iOS app icons must be opaque."""
-    if not alpha:
+    """Encode filtered rows (RGBA, or RGB with alpha=False: iOS app icons must be opaque)."""
+    if not alpha and len(raw) == size * (1 + size * 4):
         out = bytearray()
         stride = 1 + size * 4
         for j in range(size):
@@ -136,24 +143,29 @@ def png(size: int, raw: bytes, *, alpha: bool = True) -> bytes:
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    targets = {
+    web = {
         "apple-touch-icon.png": (180, 1.0),
         "icon-192.png": (192, 1.0),
         "icon-512.png": (512, 1.0),
-        "maskable-512.png": (512, 0.78),
+        "maskable-512.png": (512, 0.8),  # the mark inside the maskable safe zone
     }
-    for name, (size, scale) in targets.items():
-        (OUT / name).write_bytes(png(size, render(size, scale)))
-    (OUT / "badge-72.png").write_bytes(png(72, render_badge(72)))
-    print(f"Wrote {len(targets) + 1} icons to {OUT}")
+    for name, (size, scale) in web.items():
+        (OUT / name).write_bytes(png(size, render(size, "green", scale), alpha=False))
+    (OUT / "badge-72.png").write_bytes(png(72, render(72, "badge", 1.1)))
+    print(f"Wrote {len(web) + 1} icons to {OUT}")
 
     if IOS_ASSETS.exists():
-        icon = IOS_ASSETS / "AppIcon.appiconset" / "AppIcon-512@2x.png"
-        icon.write_bytes(png(1024, render(1024, 1.0), alpha=False))
-        splash = png(2732, render(2732, 0.22), alpha=False)
-        for name in ("splash-2732x2732.png", "splash-2732x2732-1.png", "splash-2732x2732-2.png"):
-            (IOS_ASSETS / "Splash.imageset" / name).write_bytes(splash)
-        print(f"Wrote the iOS app icon and launch images to {IOS_ASSETS}")
+        icons = IOS_ASSETS / "AppIcon.appiconset"
+        for name, style in (
+            ("AppIcon-1024.png", "green"),
+            ("AppIcon-1024-dark.png", "dark"),
+            ("AppIcon-1024-tinted.png", "tinted"),
+        ):
+            (icons / name).write_bytes(png(1024, render(1024, style), alpha=False))
+        splash = IOS_ASSETS / "Splash.imageset"
+        (splash / "splash-light.png").write_bytes(png(64, solid(64, LIGHT_BG), alpha=False))
+        (splash / "splash-dark.png").write_bytes(png(64, solid(64, DARK_BG), alpha=False))
+        print(f"Wrote the iOS app icon (default, dark, tinted) and launch images to {IOS_ASSETS}")
 
 
 if __name__ == "__main__":

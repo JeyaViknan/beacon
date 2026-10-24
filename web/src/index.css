@@ -1,193 +1,290 @@
 @import "tailwindcss";
 
 /*
-  Beacon tokens. Dark ("night watch") is the default; light follows prefers-color-scheme.
-  Status colours are fixed by the spec and always paired with an icon + text label.
+  Beacon follows iOS (ADR 0016): Apple's system colours (UIKit's dynamic colours, light and dark),
+  the system font, inset grouped lists and Liquid Glass bars. Status is always a symbol + text,
+  never colour alone.
 */
 :root {
-  color-scheme: dark light;
-  --bg: #0c1420;
-  --surface: #131d2b;
-  --surface-2: #1a2638;
-  --line: #22324a;
-  --text: #e6edf5;
-  --muted: #8a9bb3;
-  --focus: #93c5fd;
+  color-scheme: light dark;
 
-  --up: #22c55e;
-  --degraded: #f59e0b;
-  --down: #ef4444;
-  --paused: #9ca3af;
-  --unknown: #64748b;
+  /* Grouped backgrounds */
+  --bg: #f2f2f7; /* systemGroupedBackground */
+  --cell: #ffffff; /* secondarySystemGroupedBackground */
+  --cell-pressed: #d1d1d6; /* systemGray4: highlighted row */
 
-  /* Text versions of the status colours (same hue, readable on --bg). */
-  --up-ink: #4ade80;
-  --degraded-ink: #fbbf24;
-  --down-ink: #f87171;
-  --paused-ink: #cbd5e1;
-  --unknown-ink: #94a3b8;
+  /* Labels and separators */
+  --label: #000000;
+  --label-2: rgb(60 60 67 / 0.6);
+  --label-3: rgb(60 60 67 / 0.3);
+  --separator: rgb(60 60 67 / 0.29);
+
+  /* Fills */
+  --fill: rgb(120 120 128 / 0.2);
+  --fill-2: rgb(120 120 128 / 0.16);
+  --fill-3: rgb(118 118 128 / 0.12);
+  --fill-4: rgb(116 116 128 / 0.08);
+
+  /* System colours */
+  --blue: #007aff;
+  --green: #34c759;
+  --orange: #ff9500;
+  --red: #ff3b30;
+  --gray: #8e8e93;
+  --indigo: #5856d6;
+  --teal: #30b0c7;
+  --tint: var(--blue);
+
+  /* Text on light backgrounds uses Apple's increased-contrast variants. */
+  --green-ink: #248a3d;
+  --orange-ink: #a85500; /* deeper than #c93400 so it never reads as red */
+  --red-ink: #d70015;
+  --gray-ink: #6c6c70;
+
+  /* Liquid Glass */
+  --glass: rgb(250 250 252 / 0.72);
+  --glass-selected: rgb(0 0 0 / 0.06);
+  --glass-rim: rgb(255 255 255 / 0.9);
+  --glass-edge: rgb(0 0 0 / 0.07);
+  --glass-shadow: 0 6px 24px rgb(0 0 0 / 0.1), 0 1px 2px rgb(0 0 0 / 0.06);
+  --dim: rgb(0 0 0 / 0.2);
+  --segment: #ffffff;
+  --segment-shadow: 0 3px 8px rgb(0 0 0 / 0.12), 0 3px 1px rgb(0 0 0 / 0.04);
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --bar: 52px; /* navigation bar height under the status bar */
 }
 
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
   :root {
-    --bg: #f3f6fa;
-    --surface: #ffffff;
-    --surface-2: #eef2f7;
-    --line: #d9e1ec;
-    --text: #0e1726;
-    --muted: #5b6b82;
-    --focus: #1d4ed8;
+    --bg: #000000;
+    --cell: #1c1c1e;
+    --cell-pressed: #3a3a3c;
 
-    --up-ink: #15803d;
-    --degraded-ink: #b45309;
-    --down-ink: #b91c1c;
-    --paused-ink: #4b5563;
-    --unknown-ink: #475569;
+    --label: #ffffff;
+    --label-2: rgb(235 235 245 / 0.6);
+    --label-3: rgb(235 235 245 / 0.3);
+    --separator: rgb(84 84 88 / 0.65);
+
+    --fill: rgb(120 120 128 / 0.36);
+    --fill-2: rgb(120 120 128 / 0.32);
+    --fill-3: rgb(118 118 128 / 0.24);
+    --fill-4: rgb(118 118 128 / 0.18);
+
+    --blue: #0a84ff;
+    --green: #30d158;
+    --orange: #ff9f0a;
+    --red: #ff453a;
+    --gray: #8e8e93;
+    --indigo: #5e5ce6;
+    --teal: #40c8e0;
+
+    --green-ink: var(--green);
+    --orange-ink: var(--orange);
+    --red-ink: var(--red);
+    --gray-ink: #98989d;
+
+    --glass: rgb(36 36 38 / 0.62);
+    --glass-selected: rgb(255 255 255 / 0.1);
+    --glass-rim: rgb(255 255 255 / 0.16);
+    --glass-edge: rgb(255 255 255 / 0.07);
+    --glass-shadow: 0 8px 28px rgb(0 0 0 / 0.5);
+    --dim: rgb(0 0 0 / 0.45);
+    --segment: #636366;
+    --segment-shadow: none;
   }
 }
 
 @theme inline {
   --color-bg: var(--bg);
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-line: var(--line);
-  --color-text: var(--text);
-  --color-muted: var(--muted);
-  --color-up: var(--up);
-  --color-degraded: var(--degraded);
-  --color-down: var(--down);
-  --color-paused: var(--paused);
-  --color-unknown: var(--unknown);
+  --color-cell: var(--cell);
+  --color-label: var(--label);
+  --color-label-2: var(--label-2);
+  --color-label-3: var(--label-3);
+  --color-separator: var(--separator);
+  --color-fill: var(--fill);
+  --color-fill-2: var(--fill-2);
+  --color-fill-3: var(--fill-3);
+  --color-fill-4: var(--fill-4);
+  --color-tint: var(--tint);
+  --color-green: var(--green);
+  --color-orange: var(--orange);
+  --color-red: var(--red);
+  --color-gray: var(--gray);
 
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
-  --font-display: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-html,
-body,
-#root {
-  min-height: 100%;
+/* iOS text styles (Dynamic Type "Large", the default). */
+@utility text-large-title {
+  font-size: 34px;
+  line-height: 41px;
+  font-weight: 700;
+}
+@utility text-title1 {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+}
+@utility text-title2 {
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
+}
+@utility text-title3 {
+  font-size: 20px;
+  line-height: 25px;
+  font-weight: 600;
+}
+@utility text-headline {
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 600;
+}
+@utility text-body {
+  font-size: 17px;
+  line-height: 22px;
+}
+@utility text-callout {
+  font-size: 16px;
+  line-height: 21px;
+}
+@utility text-subhead {
+  font-size: 15px;
+  line-height: 20px;
+}
+@utility text-footnote {
+  font-size: 13px;
+  line-height: 18px;
+}
+@utility text-caption {
+  font-size: 12px;
+  line-height: 16px;
+}
+@utility text-caption2 {
+  font-size: 11px;
+  line-height: 13px;
 }
 
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-y: none;
-}
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
 
-:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-  border-radius: 6px;
-}
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
 
-.tabular {
-  font-variant-numeric: tabular-nums;
-}
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--label);
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 22px;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
 
-/* ------------------------------------------------------------------ the beacon lamp (signature) */
+  /* Controls behave like native ones: no text selection or link callouts on long press. */
+  a,
+  button,
+  [role="tab"],
+  nav {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
 
-.lamp {
-  --state: var(--up);
-  --sweep: 9s;
-  position: relative;
-  width: 64px;
-  height: 64px;
-  flex: none;
-  border-radius: 9999px;
-  isolation: isolate;
-}
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
 
-.lamp[data-state="degraded"] {
-  --state: var(--degraded);
-  --sweep: 5s;
-}
+  /* Keyboard focus ring for controls; text fields show their caret instead, as on iOS. */
+  :focus-visible:not(input, textarea, select) {
+    outline: 2px solid var(--tint);
+    outline-offset: 2px;
+  }
 
-.lamp[data-state="down"] {
-  --state: var(--down);
-  --sweep: 2.4s;
-}
-
-.lamp[data-state="unknown"] {
-  --state: var(--unknown);
-}
-
-/* The beam: a narrow wedge of light that sweeps around the lamp. */
-.lamp::before {
-  content: "";
-  position: absolute;
-  inset: -18px;
-  border-radius: 9999px;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg 292deg,
-    color-mix(in oklab, var(--state) 10%, transparent) 318deg,
-    color-mix(in oklab, var(--state) 55%, transparent) 350deg,
-    transparent 360deg
-  );
-  -webkit-mask: radial-gradient(circle, transparent 18px, #000 19px);
-  mask: radial-gradient(circle, transparent 18px, #000 19px);
-  animation: lamp-sweep var(--sweep) linear infinite;
-  z-index: -1;
-}
-
-/* The lens: a ring of the state colour around a bright core. */
-.lamp::after {
-  content: "";
-  position: absolute;
-  inset: 16px;
-  border-radius: 9999px;
-  background: radial-gradient(circle at 50% 45%, #fff 0 18%, var(--state) 46%, color-mix(in oklab, var(--state) 70%, #000) 100%);
-  box-shadow:
-    0 0 0 3px color-mix(in oklab, var(--state) 25%, transparent),
-    0 0 22px 4px color-mix(in oklab, var(--state) 45%, transparent);
-}
-
-.lamp[data-state="down"]::after {
-  animation: lamp-pulse 1.2s ease-in-out infinite;
-}
-
-@keyframes lamp-sweep {
-  to {
-    transform: rotate(1turn);
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-@keyframes lamp-pulse {
-  50% {
+@layer components {
+  /* ------------------------------------------------------------------ Liquid Glass */
+
+  .glass {
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
     box-shadow:
-      0 0 0 6px color-mix(in oklab, var(--state) 30%, transparent),
-      0 0 34px 10px color-mix(in oklab, var(--state) 55%, transparent);
+      inset 0 0.5px 0 var(--glass-rim),
+      inset 0 0 0 0.5px var(--glass-edge),
+      var(--glass-shadow);
   }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .lamp::before,
-  .lamp::after {
-    animation: none !important;
+  /* Soft scroll edges: content blurs and fades under the bars instead of hitting a hard line. */
+  .scroll-edge-top,
+  .scroll-edge-bottom {
+    position: fixed;
+    inset-inline: 0;
+    z-index: 20;
+    pointer-events: none;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
   }
+  .scroll-edge-top {
+    top: 0;
+    height: calc(var(--safe-top) + var(--bar) + 12px);
+    background: linear-gradient(to bottom, var(--bg) 0%, color-mix(in srgb, var(--bg) 80%, transparent) 55%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, #000 65%, transparent);
+    mask-image: linear-gradient(to bottom, #000 65%, transparent);
+  }
+  .scroll-edge-bottom {
+    bottom: 0;
+    height: calc(var(--safe-bottom) + 96px);
+    background: linear-gradient(to top, color-mix(in srgb, var(--bg) 70%, transparent), transparent);
+    -webkit-mask-image: linear-gradient(to top, #000 40%, transparent);
+    mask-image: linear-gradient(to top, #000 40%, transparent);
+  }
+
+  /* ------------------------------------------------------------------ Inset grouped lists */
+
+  .list {
+    overflow: hidden;
+    border-radius: 26px;
+    background: var(--cell);
+  }
+
+  /* Hairline separators that start at the row's text, like UITableView. */
+  .list > * {
+    position: relative;
+  }
+  .list > * + *::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: var(--separator-inset, 20px);
+    height: 0.5px;
+    background: var(--separator);
+  }
+
+  .pressable:active {
+    background: var(--cell-pressed);
+  }
+
+  /* Placeholders are still shapes, not shimmer. */
   .skeleton {
-    animation: none !important;
-  }
-}
-
-.skeleton {
-  background: linear-gradient(90deg, var(--surface-2) 0%, var(--line) 50%, var(--surface-2) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
-  border-radius: 8px;
-}
-
-@keyframes shimmer {
-  to {
-    background-position: -200% 0;
+    background: var(--fill-4);
+    border-radius: 12px;
   }
 }

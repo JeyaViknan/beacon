@@ -20,7 +20,7 @@ export async function tapFeedback(style: "light" | "medium" = "light"): Promise<
   }
 }
 
-/** Native shell setup: light status-bar text over the app's dark header, then hide the splash. */
+/** Native shell setup: the status bar follows Light/Dark Mode like any iOS app, then hide the splash. */
 export async function initNativeShell(): Promise<void> {
   if (!isNativeApp()) return;
   try {
@@ -28,9 +28,8 @@ export async function initNativeShell(): Promise<void> {
       import("@capacitor/status-bar"),
       import("@capacitor/splash-screen"),
     ]);
-    const light = window.matchMedia?.("(prefers-color-scheme: light)").matches ?? false;
-    await StatusBar.setStyle({ style: light ? Style.Light : Style.Dark });
-    await SplashScreen.hide({ fadeOutDuration: 200 });
+    await StatusBar.setStyle({ style: Style.Default });
+    await SplashScreen.hide({ fadeOutDuration: 150 });
   } catch {
     // If a plugin is unavailable the app still works; the splash auto-hides on its own timeout.
   }

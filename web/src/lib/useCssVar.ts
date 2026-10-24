@@ -9,7 +9,7 @@ export function useCssVar(name: string, fallback: string): string {
   };
   const [value, setValue] = useState(read);
   useEffect(() => {
-    const mq = window.matchMedia?.("(prefers-color-scheme: light)");
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
     const update = () => setValue(read());
     mq?.addEventListener?.("change", update);
     return () => mq?.removeEventListener?.("change", update);
