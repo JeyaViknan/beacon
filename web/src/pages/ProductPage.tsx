@@ -17,6 +17,7 @@ import {
   useSeries,
   useTestNow,
 } from "../lib/queries";
+import { tapFeedback } from "../lib/platform";
 import { formatLatency, formatUptime } from "../lib/status";
 import { formatIST, formatTimeIST, since } from "../lib/time";
 import type { CheckResult, Incident, Product, ProductDetail } from "../lib/types";
@@ -158,7 +159,10 @@ function IncidentBanner({ incident }: { incident: Incident }) {
         <span className="font-mono tabular text-text">{since(incident.startedAt, now)}</span>
       </p>
       {acked ? null : (
-        <Button tone="primary" className="mt-3 w-full" disabled={ack.isPending} onClick={() => ack.mutate(incident.id)}>
+        <Button tone="primary" className="mt-3 w-full" disabled={ack.isPending} onClick={() => {
+            void tapFeedback("medium");
+            ack.mutate(incident.id);
+          }}>
           {ack.isPending ? "Acknowledging…" : "Acknowledge"}
         </Button>
       )}
@@ -173,7 +177,13 @@ function Actions({ product }: { product: Product }) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
-        <Button onClick={() => test.mutate()} disabled={test.isPending}>
+        <Button
+          onClick={() => {
+            void tapFeedback();
+            test.mutate();
+          }}
+          disabled={test.isPending}
+        >
           {test.isPending ? "Checking…" : "Test now"}
         </Button>
         <Button onClick={() => toggle.mutate(product.enabled ? "pause" : "resume")} disabled={toggle.isPending}>

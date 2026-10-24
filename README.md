@@ -127,3 +127,21 @@ CI (`.github/workflows/ci.yml`) runs on every PR and branch push. Deploys (`depl
 - Incident reviews: [`docs/incidents/`](docs/incidents/), starting from [`TEMPLATE.md`](docs/incidents/TEMPLATE.md).
 - Alerting setup (healthchecks.io + PagerDuty): [`docs/setup/alerting.md`](docs/setup/alerting.md).
 - Handy commands: `make test-alarm` (test page through the ops path), `make demo-break` / `make demo-fix` / `make demo-status` (demo target from the terminal).
+
+## Native iOS app (Capacitor)
+
+The same React screens packaged as a native iPhone app (ADR 0015): own icon, launch screen, no browser UI, haptics. It's signed with a **free Apple ID**, so there's no native push (alerts come by email and through the installed web app's push), and the app must be reinstalled every **7 days**.
+
+```bash
+./scripts/build_ios.sh          # build the screens for the app and copy them into web/ios
+open web/ios/App/App.xcodeproj  # then follow the steps below
+```
+
+First install on your iPhone:
+1. **Xcode → Settings → Accounts → +** → Apple ID → sign in.
+2. In the project: **App** target → **Signing & Capabilities** → *Team*: your name (Personal Team). Keep the bundle ID `com.jeyaviknan.beacon` (or make it unique if Xcode complains).
+3. Connect the iPhone by cable, unlock it, and tap **Trust**. On the iPhone: **Settings → Privacy & Security → Developer Mode → On** (it restarts).
+4. Pick your iPhone as the run destination at the top of Xcode and press **Run (⌘R)**.
+5. The first launch is blocked until you trust the developer: **Settings → General → VPN & Device Management → your Apple ID → Trust**. Then open **Beacon**.
+
+Every 7 days: plug in and press **Run** again.

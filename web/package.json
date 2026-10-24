@@ -10,9 +10,15 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.sw.json",
     "lint": "eslint .",
     "test": "vitest run",
-    "dev:mock": "VITE_MOCK=1 vite"
+    "dev:mock": "VITE_MOCK=1 vite",
+    "build:native": "BEACON_NATIVE=1 vite build && cap sync ios"
   },
   "dependencies": {
+    "@capacitor/core": "8.5.3",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/ios": "8.5.3",
+    "@capacitor/splash-screen": "8.0.2",
+    "@capacitor/status-bar": "8.0.4",
     "@hookform/resolvers": "5.9.2",
     "@tanstack/react-query": "5.104.5",
     "react": "18.3.1",
@@ -27,6 +33,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.5.3",
     "@eslint/js": "9.39.5",
     "@tailwindcss/vite": "4.1.18",
     "@testing-library/jest-dom": "6.9.1",

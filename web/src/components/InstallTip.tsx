@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { currentInstallEnv, dismissInstallTip, shouldShowInstallTip } from "../lib/install";
+import { isNativeApp } from "../lib/platform";
 import { CloseIcon, ShareIcon } from "./Icons";
 
 export function InstallTip() {
-  const [visible, setVisible] = useState(() => shouldShowInstallTip(currentInstallEnv()));
+  const [visible, setVisible] = useState(() => !isNativeApp() && shouldShowInstallTip(currentInstallEnv()));
   if (!visible) return null;
   return (
     <div className="flex items-start gap-3 rounded-2xl border border-line bg-surface-2 p-3 text-sm" role="note">

@@ -3,7 +3,9 @@
     python scripts/gen_icons.py
 
 The mark is a lamp with two beams sweeping out to the sides, on the app's night-navy
-background. Writes web/public/icons/*.png. The SVG favicon is drawn by hand (web/public).
+background. Writes web/public/icons/*.png (web app) and, when the native project exists,
+the iOS app icon and launch image in web/ios/App/App/Assets.xcassets. The SVG favicon is
+drawn by hand (web/public).
 """
 
 import math
@@ -11,7 +13,9 @@ import struct
 import zlib
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parents[1] / "web" / "public" / "icons"
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "web" / "public" / "icons"
+IOS_ASSETS = ROOT / "web" / "ios" / "App" / "App" / "Assets.xcassets"
 
 BG = (12, 20, 32)
 BEAM = (255, 233, 176)
@@ -46,6 +50,10 @@ def render(size: int, scale: float = 1.0, transparent_bg: bool = False) -> bytes
             alpha_out = 0.0 if transparent_bg else 1.0
             dx, dy = x - cx, cy - y
             d = math.hypot(dx, dy)
+            if d > beam_len + 0.03 * scale + 2 * px:
+                # Far from the mark: plain background (keeps large launch images fast).
+                rows += bytes(BG) + bytes([0 if transparent_bg else 255])
+                continue
 
             # Beams: wedges to the left and right, fading with distance.
             theta = abs(math.atan2(dy, dx))
@@ -99,13 +107,25 @@ def render_badge(size: int) -> bytes:
     return bytes(rows)
 
 
-def png(size: int, raw: bytes) -> bytes:
+def png(size: int, raw: bytes, *, alpha: bool = True) -> bytes:
+    """Encode filtered RGBA rows. ``alpha=False`` writes RGB: iOS app icons must be opaque."""
+    if not alpha:
+        out = bytearray()
+        stride = 1 + size * 4
+        for j in range(size):
+            row = raw[j * stride : (j + 1) * stride]
+            out.append(row[0])
+            for i in range(size):
+                out += row[1 + i * 4 : 4 + i * 4]
+        raw = bytes(out)
+
     def chunk(kind: bytes, data: bytes) -> bytes:
         return (
             struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
         )
 
-    header = struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0)  # 8-bit RGBA
+    color_type = 6 if alpha else 2  # 8-bit RGBA or RGB
+    header = struct.pack(">IIBBBBB", size, size, 8, color_type, 0, 0, 0)
     return (
         b"\x89PNG\r\n\x1a\n"
         + chunk(b"IHDR", header)
@@ -126,6 +146,14 @@ def main() -> None:
         (OUT / name).write_bytes(png(size, render(size, scale)))
     (OUT / "badge-72.png").write_bytes(png(72, render_badge(72)))
     print(f"Wrote {len(targets) + 1} icons to {OUT}")
+
+    if IOS_ASSETS.exists():
+        icon = IOS_ASSETS / "AppIcon.appiconset" / "AppIcon-512@2x.png"
+        icon.write_bytes(png(1024, render(1024, 1.0), alpha=False))
+        splash = png(2732, render(2732, 0.22), alpha=False)
+        for name in ("splash-2732x2732.png", "splash-2732x2732-1.png", "splash-2732x2732-2.png"):
+            (IOS_ASSETS / "Splash.imageset" / name).write_bytes(splash)
+        print(f"Wrote the iOS app icon and launch images to {IOS_ASSETS}")
 
 
 if __name__ == "__main__":

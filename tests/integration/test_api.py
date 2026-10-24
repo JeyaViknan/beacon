@@ -558,3 +558,52 @@ def test_email_toggle_sets_the_sns_email_attribute(env, token):
     call("POST", "/api/notifications/test", token=token)
     flags = [p["MessageAttributes"]["email"]["StringValue"] for p in env.published]
     assert flags == ["on", "off"]
+
+
+# --------------------------------------------------------------------------- native app (CORS)
+
+NATIVE = {"origin": "capacitor://localhost"}
+
+
+def test_native_app_preflight_is_answered_without_a_token(env):
+    status, _body, headers = call(
+        "OPTIONS",
+        "/api/products",
+        headers={
+            **NATIVE,
+            "access-control-request-method": "GET",
+            "access-control-request-headers": "authorization",
+        },
+    )
+    assert status == 204
+    assert headers["Access-Control-Allow-Origin"] == "capacitor://localhost"
+    assert "GET" in headers["Access-Control-Allow-Methods"]
+    assert "Authorization" in headers["Access-Control-Allow-Headers"]
+
+
+def test_preflight_still_needs_the_cloudfront_secret(env):
+    assert call("OPTIONS", "/api/products", headers=NATIVE, origin=None)[0] == 403
+
+
+def test_native_app_requests_get_cors_headers_and_still_need_a_token(env, token):
+    status, _, headers = call("GET", "/api/summary", token=token, headers=NATIVE)
+    assert status == 200
+    assert headers["Access-Control-Allow-Origin"] == "capacitor://localhost"
+    status, _, headers = call("GET", "/api/summary", headers=NATIVE)
+    assert status == 401
+    assert (
+        headers["Access-Control-Allow-Origin"] == "capacitor://localhost"
+    )  # the app can read the error
+
+
+def test_other_origins_get_no_cors_headers(env, token):
+    _, _, headers = call(
+        "GET", "/api/summary", token=token, headers={"origin": "https://evil.example"}
+    )
+    assert "Access-Control-Allow-Origin" not in headers
+    _status, _, headers = call(
+        "OPTIONS",
+        "/api/summary",
+        headers={"origin": "https://evil.example", "access-control-request-method": "GET"},
+    )
+    assert "Access-Control-Allow-Origin" not in headers

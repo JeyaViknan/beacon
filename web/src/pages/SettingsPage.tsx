@@ -5,6 +5,7 @@ import { Button, Card, ErrorNote, SectionTitle, Skeleton } from "../components/F
 import { StatusIcon } from "../components/Icons";
 import { ConfirmDialog, PageHeader } from "../components/Layout";
 import { clearToken } from "../lib/auth";
+import { isNativeApp, tapFeedback } from "../lib/platform";
 import { enablePush, notificationPermission, pushSupport } from "../lib/push";
 import { useDemo, useHealth, usePatchSettings, useSettings, useTestNotification } from "../lib/queries";
 import type { SettingsResponse } from "../lib/types";
@@ -57,7 +58,13 @@ function Notifications({ settings }: { settings: SettingsResponse | undefined })
     <section>
       <SectionTitle>Notifications</SectionTitle>
       <Card className="space-y-3">
-        {support === "needs-install" ? (
+        {isNativeApp() ? (
+          <p className="text-sm">
+            This app shows Beacon's live status. Alerts reach you by <strong>email</strong> and through the{" "}
+            <strong>Beacon web app</strong> on your Home Screen, which has push notifications. Native push in this app
+            would need Apple's paid Developer Program.
+          </p>
+        ) : support === "needs-install" ? (
           <p className="text-sm">
             iPhone only sends notifications to installed apps. Tap <strong>Share</strong> →{" "}
             <strong>Add to Home Screen</strong>, open Beacon from the Home Screen, then come back here.
@@ -201,10 +208,23 @@ function Demo({ data }: { data: SettingsResponse }) {
           </span>
         </p>
         <div className="grid gap-3">
-          <Button tone="danger" disabled={demo.isPending || broken} onClick={() => demo.mutate("break")}>
+          <Button
+            tone="danger"
+            disabled={demo.isPending || broken}
+            onClick={() => {
+              void tapFeedback("medium");
+              demo.mutate("break");
+            }}
+          >
             Break demo target
           </Button>
-          <Button disabled={demo.isPending || !broken} onClick={() => demo.mutate("fix")}>
+          <Button
+            disabled={demo.isPending || !broken}
+            onClick={() => {
+              void tapFeedback("medium");
+              demo.mutate("fix");
+            }}
+          >
             Fix demo target
           </Button>
         </div>

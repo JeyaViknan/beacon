@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { ApiError } from "./lib/api";
+import { initNativeShell, isNativeApp } from "./lib/platform";
 import "./index.css";
 
 const queryClient = new QueryClient({
@@ -33,7 +34,10 @@ async function start() {
       </QueryClientProvider>
     </StrictMode>,
   );
-  if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  if (isNativeApp()) {
+    // The native app ships its screens inside the app and has no service worker.
+    void initNativeShell();
+  } else if (import.meta.env.PROD && "serviceWorker" in navigator) {
     void navigator.serviceWorker.register("/sw.js", { scope: "/" });
   }
 }

@@ -6,6 +6,7 @@ import { InstallTip } from "../components/InstallTip";
 import { Lamp } from "../components/Lamp";
 import { ProductCard } from "../components/ProductCard";
 import { RelativeTime } from "../components/RelativeTime";
+import { tapFeedback } from "../lib/platform";
 import { useProducts, useSummary } from "../lib/queries";
 import { STATUS, sortProducts } from "../lib/status";
 import type { Kind, Status } from "../lib/types";
@@ -40,6 +41,7 @@ export default function HomePage() {
             type="button"
             aria-label="Refresh"
             onClick={() => {
+              void tapFeedback();
               void products.refetch();
               void summary.refetch();
             }}

@@ -13,7 +13,7 @@ from typing import Any, Literal
 from urllib.parse import unquote, urlsplit
 
 from aws_lambda_powertools import Logger, Metrics, Tracer
-from aws_lambda_powertools.event_handler import LambdaFunctionUrlResolver, Response
+from aws_lambda_powertools.event_handler import CORSConfig, LambdaFunctionUrlResolver, Response
 from aws_lambda_powertools.event_handler.middlewares import NextMiddleware
 from aws_lambda_powertools.logging import correlation_paths
 from aws_lambda_powertools.utilities.typing import LambdaContext
@@ -71,7 +71,17 @@ from beacon_core.views import (
 logger = Logger()
 tracer = Tracer()
 metrics = Metrics()
-app = LambdaFunctionUrlResolver()
+# The native iOS app (Capacitor) serves its screens from capacitor://localhost and calls this API
+# cross-origin; it is the only extra origin allowed (ADR 0015). The web app is same-origin.
+NATIVE_APP_ORIGIN = "capacitor://localhost"
+app = LambdaFunctionUrlResolver(
+    cors=CORSConfig(
+        allow_origin=NATIVE_APP_ORIGIN,
+        allow_headers=["Authorization", "Content-Type"],
+        expose_headers=["Retry-After"],
+        max_age=600,
+    )
+)
 
 PUBLIC_ROUTES = {("GET", "/api/health"), ("POST", "/api/auth/login")}
 DEMO_PARAM = "/beacon/demo/healthy"
@@ -136,7 +146,12 @@ def guard(app: LambdaFunctionUrlResolver, next_middleware: NextMiddleware) -> Re
     expected = os.environ.get("ORIGIN_VERIFY_SECRET", "")
     if not same_secret(expected, event.headers.get("x-beacon-origin")):
         return error_response(403, "forbidden", "requests must come through CloudFront")
-    if (event.http_method.upper(), event.path) not in PUBLIC_ROUTES:
+    method = event.http_method.upper()
+    if method == "OPTIONS":
+        # CORS preflight: browsers never attach credentials to it. Powertools answers it (204 +
+        # Access-Control-* for allowed origins only); the real request that follows needs the JWT.
+        return next_middleware(app)
+    if (method, event.path) not in PUBLIC_ROUTES:
         secret = aws.param("/beacon/jwt_secret")
         if not secret:
             return error_response(503, "not_configured", "JWT secret is not set")

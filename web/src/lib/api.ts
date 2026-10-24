@@ -1,4 +1,5 @@
 import { clearToken, getToken } from "./auth";
+import { API_BASE } from "./platform";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -25,7 +26,7 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
 
   let response: Response;
   try {
-    response = await fetch(`/api${path}`, {
+    response = await fetch(`${API_BASE}/api${path}`, {
       method: init.method ?? "GET",
       headers,
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
