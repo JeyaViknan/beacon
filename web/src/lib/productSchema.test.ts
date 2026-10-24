@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_FORM, formToInput, productSchema, splitTags } from "./productSchema";
+import { DEFAULT_FORM, formToInput, nameFromUrl, productSchema, splitTags, withScheme } from "./productSchema";
 
 const valid = { ...DEFAULT_FORM, name: "Nankiv", checkUrl: "https://nankiv.example/health" };
 
@@ -13,12 +13,17 @@ describe("productSchema", () => {
     expect(productSchema.safeParse(valid).success).toBe(true);
   });
 
+  it("accepts just a link: no name, no scheme", () => {
+    expect(errorsFor({ name: "", checkUrl: "myapp.vercel.app" })).toEqual([]);
+  });
+
   it.each([
-    [{ name: "" }, "name"],
     [{ name: "x".repeat(61) }, "name"],
     [{ note: "x".repeat(281) }, "note"],
+    [{ checkUrl: "" }, "checkUrl"],
     [{ checkUrl: "ftp://example.com" }, "checkUrl"],
-    [{ checkUrl: "example.com" }, "checkUrl"],
+    [{ checkUrl: "not a site" }, "checkUrl"],
+    [{ checkUrl: "javascript:alert(1)" }, "checkUrl"],
     [{ checkUrl: "https://user:pw@example.com" }, "checkUrl"],
     [{ expectedStatus: "2xx" }, "expectedStatus"],
     [{ expectedStatus: "399-200" }, "expectedStatus"],
@@ -48,6 +53,21 @@ describe("formToInput", () => {
     expect(input.liveUrl).toBeNull();
     expect(input.stack).toEqual(["React", "AWS"]);
     expect(input.expectedStatus).toBe("200,301");
+  });
+
+  it("names a product after its site and adds https:// when missing", () => {
+    const input = formToInput({ ...valid, name: " ", checkUrl: " www.nankiv.app/health ", liveUrl: "nankiv.app" });
+    expect(input.name).toBe("nankiv.app");
+    expect(input.checkUrl).toBe("https://www.nankiv.app/health");
+    expect(input.liveUrl).toBe("https://nankiv.app");
+  });
+
+  it("withScheme and nameFromUrl", () => {
+    expect(withScheme("cdn.example.net/x")).toBe("https://cdn.example.net/x");
+    expect(withScheme("http://a.example")).toBe("http://a.example");
+    expect(withScheme("  ")).toBe("");
+    expect(nameFromUrl("https://WWW.Example.com:8443/health")).toBe("example.com");
+    expect(nameFromUrl("not a site")).toBe("");
   });
 
   it("splitTags drops blanks and duplicates", () => {

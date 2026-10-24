@@ -16,27 +16,39 @@ function validStatusSpec(spec: string): boolean {
   });
 }
 
+/** "myapp.vercel.app" -> "https://myapp.vercel.app"; anything with a scheme is left alone. */
+export function withScheme(value: string): string {
+  const v = value.trim();
+  return v === "" || v.includes("://") ? v : `https://${v}`;
+}
+
 function isHttpUrl(value: string): boolean {
   try {
-    const url = new URL(value);
+    const url = new URL(withScheme(value));
     return (url.protocol === "http:" || url.protocol === "https:") && url.hostname !== "" && !url.username;
   } catch {
     return false;
   }
 }
 
-const httpUrl = z
-  .string()
-  .trim()
-  .min(1, "Enter the URL to check")
-  .max(2048)
-  .refine(isHttpUrl, "Use a full http:// or https:// address");
+/** A product added with just a link is named after its site: "https://www.nankiv.app/health" -> "nankiv.app". */
+export function nameFromUrl(value: string): string {
+  try {
+    return new URL(withScheme(value)).hostname.replace(/^www\./, "").slice(0, 60);
+  } catch {
+    return "";
+  }
+}
+
+const BAD_URL = "Use a web address like myapp.vercel.app or https://example.com/health";
+
+const httpUrl = z.string().trim().min(1, "Paste the link to check").max(2048).refine(isHttpUrl, BAD_URL);
 
 const optionalUrl = z
   .string()
   .trim()
   .max(2048)
-  .refine((v) => v === "" || isHttpUrl(v), "Use a full http:// or https:// address");
+  .refine((v) => v === "" || isHttpUrl(v), BAD_URL);
 
 const int = (min: number, max: number, what: string) =>
   z
@@ -47,7 +59,7 @@ const int = (min: number, max: number, what: string) =>
 
 export const productSchema = z
   .object({
-    name: z.string().trim().min(1, "Give the product a name").max(60, "60 characters at most"),
+    name: z.string().trim().max(60, "60 characters at most"), // blank: named after the site
     kind: z.enum(["personal", "client"]),
     note: z.string().trim().max(280, "280 characters at most"),
     checkUrl: httpUrl,
@@ -139,10 +151,10 @@ export function productToForm(p: Product): ProductFormValues {
 
 export function formToInput(v: ProductFormValues): ProductInput {
   return {
-    name: v.name.trim(),
+    name: v.name.trim() || nameFromUrl(v.checkUrl),
     kind: v.kind,
     note: v.note.trim(),
-    checkUrl: v.checkUrl.trim(),
+    checkUrl: withScheme(v.checkUrl),
     method: v.method,
     expectedStatus: v.expectedStatus.replace(/\s+/g, ""),
     keyword: v.keyword.trim() || null,
@@ -152,8 +164,8 @@ export function formToInput(v: ProductFormValues): ProductInput {
     openAfter: v.openAfter,
     resolveAfter: v.resolveAfter,
     sloTarget: v.sloTarget,
-    liveUrl: v.liveUrl.trim() || null,
-    githubUrl: v.githubUrl.trim() || null,
+    liveUrl: withScheme(v.liveUrl) || null,
+    githubUrl: withScheme(v.githubUrl) || null,
     stack: splitTags(v.stackText),
     sortOrder: v.sortOrder,
   };

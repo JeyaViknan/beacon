@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { DailyBars, LatencyChart } from "../components/Charts";
 import { Button, Card, ErrorNote, SectionTitle, Skeleton } from "../components/Feedback";
 import { ExternalIcon, StatusIcon } from "../components/Icons";
@@ -35,6 +35,8 @@ export default function ProductPage() {
   const { id = "" } = useParams();
   const detail = useProduct(id);
   const p = detail.data?.product;
+  // Set by the Add product form: check the new product at once instead of waiting for the probe.
+  const justAdded = (useLocation().state as { justAdded?: boolean } | null)?.justAdded === true;
 
   return (
     <div className="space-y-5">
@@ -51,12 +53,12 @@ export default function ProductPage() {
       />
       {detail.isError ? <ErrorNote error={detail.error} /> : null}
       {detail.isPending ? <Skeleton className="h-64 w-full rounded-2xl" /> : null}
-      {detail.data ? <Detail detail={detail.data} /> : null}
+      {detail.data ? <Detail detail={detail.data} justAdded={justAdded} /> : null}
     </div>
   );
 }
 
-function Detail({ detail }: { detail: ProductDetail }) {
+function Detail({ detail, justAdded }: { detail: ProductDetail; justAdded: boolean }) {
   const { product: p, stats, openIncident } = detail;
   const now = useNow(10_000);
   return (
@@ -78,7 +80,7 @@ function Detail({ detail }: { detail: ProductDetail }) {
 
       {openIncident ? <IncidentBanner incident={openIncident} /> : null}
 
-      <Actions product={p} />
+      <Actions product={p} justAdded={justAdded} />
 
       <Card>
         <dl className="grid grid-cols-3 gap-y-4">
@@ -171,9 +173,16 @@ function IncidentBanner({ incident }: { incident: Incident }) {
   );
 }
 
-function Actions({ product }: { product: Product }) {
+function Actions({ product, justAdded }: { product: Product; justAdded: boolean }) {
   const test = useTestNow(product.id);
   const toggle = usePauseResume(product.id);
+  const autoTested = useRef(false);
+  useEffect(() => {
+    if (justAdded && !autoTested.current) {
+      autoTested.current = true;
+      test.mutate();
+    }
+  }, [justAdded, test]);
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
@@ -192,6 +201,12 @@ function Actions({ product }: { product: Product }) {
       </div>
       {test.data ? <TestResult result={test.data} /> : null}
       {test.isError ? <ErrorNote error={test.error} /> : null}
+      {justAdded ? (
+        <p className="text-sm text-muted">
+          Added. Beacon checks it every {product.intervalMin === 1 ? "minute" : `${product.intervalMin} minutes`} from
+          now on and alerts you if it goes down.
+        </p>
+      ) : null}
       {toggle.isError ? <ErrorNote error={toggle.error} /> : null}
     </div>
   );

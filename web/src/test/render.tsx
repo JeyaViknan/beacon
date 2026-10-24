@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, type MemoryRouterProps } from "react-router-dom";
 import { vi } from "vitest";
 
-export function renderWithApp(ui: React.ReactElement, path = "/") {
+/** ``path`` may carry navigation state: { pathname: "/p/1", state: { justAdded: true } }. */
+export function renderWithApp(ui: React.ReactElement, path: NonNullable<MemoryRouterProps["initialEntries"]>[number] = "/") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, refetchInterval: false } } });
   return render(
     <QueryClientProvider client={client}>

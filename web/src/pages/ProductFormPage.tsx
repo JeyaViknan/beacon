@@ -8,6 +8,7 @@ import { ApiError } from "../lib/api";
 import {
   DEFAULT_FORM,
   formToInput,
+  nameFromUrl,
   productSchema,
   productToForm,
   type ProductFormValues,
@@ -55,7 +56,8 @@ function ProductForm({ mode, id, initial }: { mode: "create" | "edit"; id: strin
   const onSubmit = handleSubmit(async (values) => {
     try {
       const saved = await mutation.mutateAsync(formToInput(values));
-      navigate(`/p/${saved.id}`, { replace: true });
+      // A new product is checked straight away on its page, so you see UP or the error at once.
+      navigate(`/p/${saved.id}`, { replace: true, state: mode === "create" ? { justAdded: true } : undefined });
     } catch (err) {
       if (err instanceof ApiError && err.code === "url_not_allowed") {
         setError("checkUrl", { message: `Beacon won't check this address: ${err.message}` });
@@ -64,18 +66,40 @@ function ProductForm({ mode, id, initial }: { mode: "create" | "edit"; id: strin
   });
 
   const method = watch("method");
+  const siteName = nameFromUrl(watch("checkUrl"));
   const num = { valueAsNumber: true } as const;
+  const editing = mode === "edit";
+  // Folded sections open themselves when one of their fields has an error.
+  const checkErrors = CHECK_FIELDS.some((k) => k in errors);
+  const detailErrors = DETAIL_FIELDS.some((k) => k in errors);
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-6 pb-6">
-      <PageHeader
-        title={mode === "create" ? "Add product" : "Edit product"}
-        back={mode === "create" ? "/" : `/p/${id}`}
-      />
+      <PageHeader title={editing ? "Edit product" : "Add product"} back={editing ? `/p/${id}` : "/"} />
 
-      <Group title="Product">
-        <Field label="Name" error={errors.name?.message}>
-          <input {...register("name")} autoComplete="off" className={inputCls} placeholder="Nankiv" />
+      <Group title="Site">
+        <Field
+          label="Link to check"
+          hint="Your site's address, e.g. myapp.vercel.app. A health-check URL is even better."
+          error={errors.checkUrl?.message}
+        >
+          <input
+            {...register("checkUrl")}
+            type="url"
+            inputMode="url"
+            autoCapitalize="off"
+            autoCorrect="off"
+            autoFocus={!editing}
+            className={inputCls}
+            placeholder="myapp.vercel.app"
+          />
+        </Field>
+        <Field
+          label="Name (optional)"
+          hint={editing ? undefined : "Leave blank to use the site's address."}
+          error={errors.name?.message}
+        >
+          <input {...register("name")} autoComplete="off" className={inputCls} placeholder={siteName || "Nankiv"} />
         </Field>
         <fieldset>
           <legend className="mb-1.5 block text-sm font-medium">Kind</legend>
@@ -93,28 +117,9 @@ function ProductForm({ mode, id, initial }: { mode: "create" | "edit"; id: strin
             ))}
           </div>
         </fieldset>
-        <Field label="Note" hint="What it is, in your words. No client names needed." error={errors.note?.message}>
-          <textarea
-            {...register("note")}
-            rows={2}
-            className={`${inputCls} py-3`}
-            placeholder="Client work — appointment booking for a clinic chain"
-          />
-        </Field>
       </Group>
 
-      <Group title="What to check">
-        <Field label="URL to check" hint="A public http(s) address, ideally a health endpoint." error={errors.checkUrl?.message}>
-          <input
-            {...register("checkUrl")}
-            type="url"
-            inputMode="url"
-            autoCapitalize="off"
-            autoCorrect="off"
-            className={inputCls}
-            placeholder="https://example.com/health"
-          />
-        </Field>
+      <Fold title="Check and alert settings" closedNote="Defaults are fine" open={editing || checkErrors}>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Method" error={errors.method?.message}>
             <select {...register("method")} className={inputCls}>
@@ -133,35 +138,34 @@ function ProductForm({ mode, id, initial }: { mode: "create" | "edit"; id: strin
         >
           <input {...register("keyword")} className={inputCls} autoCapitalize="off" placeholder="Welcome" />
         </Field>
-      </Group>
-
-      <details className="group rounded-2xl border border-line bg-surface p-4" open={mode === "edit"}>
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between font-semibold">
-          Check and alert settings
-          <span className="text-sm font-normal text-muted group-open:hidden">Defaults are fine</span>
-        </summary>
-        <div className="mt-3 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Check every" error={errors.intervalMin?.message}>
-              <select {...register("intervalMin", { setValueAs: Number })} className={inputCls}>
-                <option value={1}>1 minute</option>
-                <option value={5}>5 minutes</option>
-              </select>
-            </Field>
-            <NumberField label="Timeout (ms)" reg={register("timeoutMs", num)} error={errors.timeoutMs?.message} />
-            <NumberField label="Down after (failed checks)" reg={register("openAfter", num)} error={errors.openAfter?.message} />
-            <NumberField
-              label="Recovered after (passed checks)"
-              reg={register("resolveAfter", num)}
-              error={errors.resolveAfter?.message}
-            />
-            <NumberField label="Slow over (ms)" reg={register("latencyWarnMs", num)} error={errors.latencyWarnMs?.message} />
-            <NumberField label="SLO target (%)" reg={register("sloTarget", num)} step="0.01" error={errors.sloTarget?.message} />
-          </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Check every" error={errors.intervalMin?.message}>
+            <select {...register("intervalMin", { setValueAs: Number })} className={inputCls}>
+              <option value={1}>1 minute</option>
+              <option value={5}>5 minutes</option>
+            </select>
+          </Field>
+          <NumberField label="Timeout (ms)" reg={register("timeoutMs", num)} error={errors.timeoutMs?.message} />
+          <NumberField label="Down after (failed checks)" reg={register("openAfter", num)} error={errors.openAfter?.message} />
+          <NumberField
+            label="Recovered after (passed checks)"
+            reg={register("resolveAfter", num)}
+            error={errors.resolveAfter?.message}
+          />
+          <NumberField label="Slow over (ms)" reg={register("latencyWarnMs", num)} error={errors.latencyWarnMs?.message} />
+          <NumberField label="SLO target (%)" reg={register("sloTarget", num)} step="0.01" error={errors.sloTarget?.message} />
         </div>
-      </details>
+      </Fold>
 
-      <Group title="Links">
+      <Fold title="Notes and links" closedNote="Optional" open={editing || detailErrors}>
+        <Field label="Note" hint="What it is, in your words. No client names needed." error={errors.note?.message}>
+          <textarea
+            {...register("note")}
+            rows={2}
+            className={`${inputCls} py-3`}
+            placeholder="Client work — appointment booking for a clinic chain"
+          />
+        </Field>
         <Field label="Live site (optional)" error={errors.liveUrl?.message}>
           <input {...register("liveUrl")} type="url" inputMode="url" autoCapitalize="off" className={inputCls} />
         </Field>
@@ -172,18 +176,53 @@ function ProductForm({ mode, id, initial }: { mode: "create" | "edit"; id: strin
           <input {...register("stackText")} className={inputCls} autoCapitalize="off" />
         </Field>
         <NumberField label="Sort order" hint="Lower shows first among equals." reg={register("sortOrder", num)} error={errors.sortOrder?.message} />
-      </Group>
+      </Fold>
 
       {mutation.isError && !(mutation.error instanceof ApiError && mutation.error.code === "url_not_allowed") ? (
         <ErrorNote error={mutation.error} />
       ) : null}
 
       <Button type="submit" tone="primary" className="w-full" disabled={isSubmitting || mutation.isPending}>
-        {mutation.isPending ? "Saving…" : mode === "create" ? "Add product" : "Save changes"}
+        {mutation.isPending ? "Saving…" : editing ? "Save changes" : "Add and check"}
       </Button>
     </form>
   );
 }
+
+function Fold({
+  title,
+  closedNote,
+  open,
+  children,
+}: {
+  title: string;
+  closedNote: string;
+  open: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className="group rounded-2xl border border-line bg-surface p-4" open={open}>
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between font-semibold">
+        {title}
+        <span className="text-sm font-normal text-muted group-open:hidden">{closedNote}</span>
+      </summary>
+      <div className="mt-3 space-y-4">{children}</div>
+    </details>
+  );
+}
+
+const CHECK_FIELDS: (keyof ProductFormValues)[] = [
+  "method",
+  "expectedStatus",
+  "keyword",
+  "intervalMin",
+  "timeoutMs",
+  "openAfter",
+  "resolveAfter",
+  "latencyWarnMs",
+  "sloTarget",
+];
+const DETAIL_FIELDS: (keyof ProductFormValues)[] = ["note", "liveUrl", "githubUrl", "stackText", "sortOrder"];
 
 const inputCls =
   "min-h-11 w-full rounded-xl border border-line bg-surface px-3 text-base text-text placeholder:text-muted/70 aria-[invalid=true]:border-down";
