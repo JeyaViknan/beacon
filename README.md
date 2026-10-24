@@ -120,3 +120,10 @@ CI (`.github/workflows/ci.yml`) runs on every PR and branch push. Deploys (`depl
    git remote add origin git@github.com:JeyaViknan/beacon.git
    git push -u origin main
    ```
+
+## Operations (M7)
+
+- Runbooks for every alarm: [`docs/runbooks/`](docs/runbooks/README.md). Each alarm email links to its page.
+- Incident reviews: [`docs/incidents/`](docs/incidents/), starting from [`TEMPLATE.md`](docs/incidents/TEMPLATE.md).
+- Alerting setup (healthchecks.io + PagerDuty): [`docs/setup/alerting.md`](docs/setup/alerting.md).
+- Handy commands: `make test-alarm` (test page through the ops path), `make demo-break` / `make demo-fix` / `make demo-status` (demo target from the terminal).

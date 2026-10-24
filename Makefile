@@ -3,7 +3,7 @@ VENV ?= .venv
 PY ?= $(VENV)/bin/python
 TF_MAIN := infra/main
 
-.PHONY: help setup lint fmt test build web validate plan apply deploy-web secrets vapid hash clean
+.PHONY: help setup lint fmt test build web validate plan apply deploy-web secrets vapid hash test-alarm demo-break demo-fix demo-status clean
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -53,6 +53,18 @@ vapid: ## Print a new VAPID key pair for Web Push
 
 hash: ## Prompt for the admin password and print its argon2id hash
 	$(PY) scripts/hash_password.py
+
+test-alarm: ## Force one CloudWatch alarm to ALARM to test email + PagerDuty (auto-resolves)
+	./scripts/test_alarm.sh
+
+demo-break: ## Make the demo target return 503 (DOWN alert in ~1-2 min)
+	./scripts/demo.sh break
+
+demo-fix: ## Make the demo target healthy again (RECOVERED alert)
+	./scripts/demo.sh fix
+
+demo-status: ## Show whether the demo target is broken
+	./scripts/demo.sh status
 
 clean: ## Remove build output
 	rm -rf dist .pytest_cache .ruff_cache .coverage htmlcov

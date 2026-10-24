@@ -126,6 +126,13 @@ resource "aws_iam_role_policy" "scheduler" {
   })
 }
 
+# Producer after consumer: the schedule (which starts sending results) waits until the processor's
+# SQS trigger exists. A plain module-level depends_on would also defer this module's data sources and
+# show its IAM as "changing" on every deploy; this link orders only the schedule.
+resource "terraform_data" "consumer_ready" {
+  input = var.consumer_ready
+}
+
 resource "aws_scheduler_schedule" "probe" {
   name                = "beacon-probe-every-minute"
   description         = "Runs the Beacon probe once a minute"
@@ -147,4 +154,6 @@ resource "aws_scheduler_schedule" "probe" {
       maximum_retry_attempts       = 0
     }
   }
+
+  depends_on = [terraform_data.consumer_ready]
 }

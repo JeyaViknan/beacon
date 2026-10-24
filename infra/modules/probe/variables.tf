@@ -49,3 +49,8 @@ variable "log_retention_days" {
   type    = number
   default = 7
 }
+
+variable "consumer_ready" {
+  description = "ID of the results consumer (the processor's SQS trigger). The schedule is created only after it exists."
+  type        = string
+}

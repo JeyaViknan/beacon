@@ -1,4 +1,6 @@
 # One probe module per supported region, switched on by var.probe_regions (ADR 0006).
+# consumer_ready makes each probe's schedule wait for the processor's SQS trigger: a producer must
+# never start before its consumer exists (RCA 2026-10-23: results piled up during a partial deploy).
 locals {
   probe_common = {
     home_region        = var.home_region
@@ -9,6 +11,7 @@ locals {
     queue_arn          = aws_sqs_queue.results.arn
     app_version        = var.app_version
     log_retention_days = var.log_retention_days
+    consumer_ready     = aws_lambda_event_source_mapping.processor.uuid
   }
 }
 
@@ -27,6 +30,7 @@ module "probe_mumbai" {
   queue_arn          = local.probe_common.queue_arn
   app_version        = local.probe_common.app_version
   log_retention_days = local.probe_common.log_retention_days
+  consumer_ready     = local.probe_common.consumer_ready
 }
 
 module "probe_singapore" {
@@ -43,6 +47,7 @@ module "probe_singapore" {
   queue_arn          = local.probe_common.queue_arn
   app_version        = local.probe_common.app_version
   log_retention_days = local.probe_common.log_retention_days
+  consumer_ready     = local.probe_common.consumer_ready
 }
 
 module "probe_virginia" {
@@ -59,4 +64,5 @@ module "probe_virginia" {
   queue_arn          = local.probe_common.queue_arn
   app_version        = local.probe_common.app_version
   log_retention_days = local.probe_common.log_retention_days
+  consumer_ready     = local.probe_common.consumer_ready
 }
