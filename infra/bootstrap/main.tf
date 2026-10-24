@@ -100,12 +100,12 @@ data "aws_iam_policy_document" "deploy_trust" {
       variable = "token.actions.githubusercontent.com:aud"
       values   = ["sts.amazonaws.com"]
     }
-    # Only jobs that run in the protected `production` environment of this repo (which requires
-    # Jeya's approval) can assume the role. Pull requests and forks cannot.
+    # Only jobs that run in the protected `production` environment of this exact repo (pinned by
+    # owner and repo ID, not just name) can assume the role. Pull requests and forks cannot.
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repo}:environment:production"]
+      values   = ["${var.github_oidc_sub_prefix}:environment:production"]
     }
   }
 }

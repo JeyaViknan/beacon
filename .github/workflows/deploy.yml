@@ -7,6 +7,12 @@ name: Deploy
 on:
   push:
     branches: [main]
+    # Documentation-only changes don't need a deploy (or an approval). infra/bootstrap is applied
+    # by hand, once, with Jeya's own credentials.
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "infra/bootstrap/**"
   workflow_dispatch:
 
 permissions:
